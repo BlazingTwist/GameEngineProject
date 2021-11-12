@@ -23,16 +23,6 @@
 
 using namespace std::chrono_literals;
 
-graphics::GeometryBuffer *createStripBuffer(const graphics::VertexAttribute *vertexAttribute, int numAttributes) {
-    auto *buffer = new graphics::GeometryBuffer(
-            graphics::GLPrimitiveType::TRIANGLE_STRIPE,
-            vertexAttribute,
-            numAttributes,
-            0
-    );
-    return buffer;
-}
-
 graphics::GeometryBuffer *createTriangleBuffer(const graphics::VertexAttribute *vertexAttribute, int numAttributes) {
     auto *buffer = new graphics::GeometryBuffer(
             graphics::GLPrimitiveType::TRIANGLES,
