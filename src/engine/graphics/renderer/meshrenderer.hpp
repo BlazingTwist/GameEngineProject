@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../core/shader.hpp"
-#include "../camera.hpp"
 #include "../core/texture.hpp"
 #include "glm/glm.hpp"
 #include "mesh.hpp"

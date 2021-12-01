@@ -1,6 +1,7 @@
 ﻿#ifndef ACAENGINE_ORBITDEMO_H
 #define ACAENGINE_ORBITDEMO_H
 
+#include <engine/gamestate/basegamestate.h>
 #include <engine/graphics/lightdata.h>
 #include <engine/graphics/camera.hpp>
 #include <engine/graphics/core/sampler.hpp>

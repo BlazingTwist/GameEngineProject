@@ -12,6 +12,7 @@
 #include <engine/gamestate/gamestatemanager.h>
 #include <game/camera/defaultcameracontrols.h>
 #include "mainstate.h"
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
