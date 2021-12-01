@@ -20,14 +20,10 @@ namespace gameState {
         spdlog::info("- press [3] to exit this state");
     }
 
-    void OrbitDemoState::initializeControls() {
+    void OrbitDemoState::initializeHotkeys() {
         hotkey_reset_isDown = input::InputManager::isKeyPressed(input::Key::Num1);
         hotkey_mainState_isDown = input::InputManager::isKeyPressed(input::Key::Num2);
         hotkey_exit_isDown = input::InputManager::isKeyPressed(input::Key::Num3);
-    }
-
-    void OrbitDemoState::initializeCursorPosition() {
-        prevCursorPos = input::InputManager::getCursorPos();
     }
 
     void OrbitDemoState::initializeShaders() {
@@ -42,8 +38,7 @@ namespace gameState {
     void OrbitDemoState::loadShaders() {
         program.use();
 
-        worldToCameraMatrixID = glGetUniformLocation(program.getID(), "world_to_camera_matrix");
-        cameraPositionShaderID = glGetUniformLocation(program.getID(), "camera_position");
+        cameraControls.loadShaders(program.getID());
         glsl_ambient_light = glGetUniformLocation(program.getID(), "ambient_light");
     }
 
@@ -64,11 +59,7 @@ namespace gameState {
     }
 
     void OrbitDemoState::initializeScene() {
-        camera.setPosition(glm::vec3(0.0f, 0.0f, -7.0f));
-        cameraPitch = 0.0f;
-        cameraYaw = 0.0f;
-        cameraRoll = 0.0f;
-        camera.setRotation(cameraYaw, cameraPitch, cameraRoll);
+        cameraControls.initializeScene();
 
         lightData.light_range = defaultLightRange;
         lightData.light_intensity = defaultLightIntensity;
@@ -87,12 +78,8 @@ namespace gameState {
         glUniform3fv(glsl_ambient_light, 1, glm::value_ptr(ambientLightData));
     }
 
-    void OrbitDemoState::bindCamera() {
-        glUniformMatrix4fv(worldToCameraMatrixID, 1, GL_FALSE, glm::value_ptr(camera.getWorldToCamera()));
-        glUniform3fv(cameraPositionShaderID, 1, glm::value_ptr(camera.getPosition()));
-    }
-
     OrbitDemoState::OrbitDemoState() :
+            cameraControls(graphics::Camera(90.0f, 0.1f, 300.0f), glm::vec3(0.0f, 0.0f, -7.0f), 0.0f, 0.0f, 0.0f),
             ambientLightData({1.4f, 1.4f, 1.4f}),
             lightData(graphics::LightData::point(
                     glm::vec3(0.0f, 0.0f, 0.0f),
@@ -100,7 +87,6 @@ namespace gameState {
                     glm::vec3(1.0f, 1.0f, 0.8f),
                     defaultLightIntensity
             )),
-            camera(graphics::Camera(90.0f, 0.1f, 300.0f)),
             meshRenderer(graphics::MeshRenderer()),
             sphereMesh(graphics::Mesh(utils::MeshLoader::get("models/sphere.obj"))) {
 
@@ -119,14 +105,14 @@ namespace gameState {
                                         graphics::Sampler::Filter::LINEAR, graphics::Sampler::Border::MIRROR);
 
         printControls();
-        initializeControls();
-        initializeCursorPosition();
+        initializeHotkeys();
+        cameraControls.initializeCursorPosition();
         initializeShaders();
         loadShaders();
         loadGeometry();
         initializeScene();
         bindLighting();
-        bindCamera();
+        cameraControls.bindCamera();
     }
 
     void OrbitDemoState::update(const long long &deltaMicroseconds) {
@@ -134,7 +120,7 @@ namespace gameState {
             spdlog::info("resetting scene");
             initializeScene();
             bindLighting();
-            bindCamera();
+            cameraControls.bindCamera();
         }
 
         if (!hotkey_mainState_isDown && input::InputManager::isKeyPressed(input::Key::Num2)) {
@@ -149,73 +135,8 @@ namespace gameState {
             return;
         }
 
-        initializeControls();
-
-        static constexpr float cameraStep = 0.1f;
-        static constexpr float cameraPitchSensitivity = 0.5f;
-        static constexpr float cameraYawSensitivity = 0.5f;
-        float rightInput = 0.0f;
-        float forwardInput = 0.0f;
-        float upInput = 0.0f;
-        bool cameraPositionChanged = false;
-        if (input::InputManager::isKeyPressed(input::Key::W)) {
-            cameraPositionChanged = true;
-            forwardInput += cameraStep;
-        }
-        if (input::InputManager::isKeyPressed(input::Key::S)) {
-            cameraPositionChanged = true;
-            forwardInput -= cameraStep;
-        }
-        if (input::InputManager::isKeyPressed(input::Key::D)) {
-            cameraPositionChanged = true;
-            rightInput += cameraStep;
-        }
-        if (input::InputManager::isKeyPressed(input::Key::A)) {
-            cameraPositionChanged = true;
-            rightInput -= cameraStep;
-        }
-        if (input::InputManager::isKeyPressed(input::Key::E)) {
-            cameraPositionChanged = true;
-            upInput += cameraStep;
-        }
-        if (input::InputManager::isKeyPressed(input::Key::Q)) {
-            cameraPositionChanged = true;
-            upInput -= cameraStep;
-        }
-        if (cameraPositionChanged) {
-            camera.moveRelative(rightInput, upInput, forwardInput);
-        }
-
-        glm::vec2 currentCursorPos = input::InputManager::getCursorPos();
-        float cursorDeltaX = currentCursorPos.x - prevCursorPos.x;
-        float cursorDeltaY = currentCursorPos.y - prevCursorPos.y;
-        prevCursorPos = currentCursorPos;
-        bool cameraDirectionChanged = false;
-        if (cursorDeltaX != 0.0f) {
-            cameraDirectionChanged = true;
-            cameraYaw += cursorDeltaX * cameraYawSensitivity;
-            if (cameraYaw > 180.0f) {
-                cameraYaw -= 360.0f;
-            } else if (cameraYaw < -180.0f) {
-                cameraYaw += 360.0f;
-            }
-        }
-        if (cursorDeltaY != 0.0f) {
-            cameraDirectionChanged = true;
-            cameraPitch += cursorDeltaY * cameraPitchSensitivity;
-            if (cameraPitch > 90.0f) {
-                cameraPitch = 90.0f;
-            } else if (cameraPitch < -90.0f) {
-                cameraPitch = -90.0f;
-            }
-        }
-        if (cameraDirectionChanged) {
-            camera.setRotation(cameraYaw, cameraPitch, cameraRoll);
-        }
-
-        if (cameraPositionChanged || cameraDirectionChanged) {
-            bindCamera();
-        }
+        initializeHotkeys();
+        cameraControls.update(deltaMicroseconds);
 
         static constexpr float lightRangeStep = 0.1f;
         static constexpr float lightIntensityStep = 0.05f;
@@ -270,11 +191,11 @@ namespace gameState {
 
     void OrbitDemoState::onResume() {
         printControls();
-        initializeControls();
-        initializeCursorPosition();
+        initializeHotkeys();
+        cameraControls.initializeCursorPosition();
         loadShaders();
         bindLighting();
-        bindCamera();
+        cameraControls.bindCamera();
     }
 
     void OrbitDemoState::onPause() {
