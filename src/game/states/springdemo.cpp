@@ -67,7 +67,7 @@ namespace gameState {
         lightData.light_position = defaultLightPosition;
         lightData.light_direction = defaultLightDirection;
         lightData.light_spot_angle = defaultLightSpotAngle;
-        
+
         spherePosition = glm::vec3(-2.0f, 0.0f, 0.0f);
         meshRenderer.setTransform(planetID, glm::translate(glm::identity<glm::mat4>(), spherePosition));
         sphereVelocity = 0.0f;
@@ -246,14 +246,20 @@ namespace gameState {
             bindLighting();
         }
 
+        // Note: this calculation still isn't exactly correct, as the acceleration would change continuously
+        //  whereas this approach assumes constant acceleration during every update step
         static constexpr float springConstant = 10.0f;
         static constexpr float sphereMass = 50.0f;
+        double deltaSeconds = (double) deltaMicroseconds / 1'000'000.0;
+        double deltaSecondsSquared = deltaSeconds * deltaSeconds;
         float xDisplacement = spherePosition.x;
         double displacementForce = 0.0 - (springConstant * xDisplacement);
         double displacementAcceleration = displacementForce / sphereMass; // is in `units / pow(seconds, 2)`
-        double displacementVelocity = displacementAcceleration * (double) deltaMicroseconds / 1'000'000.0;
+        double displacementVelocity = displacementAcceleration * deltaSeconds;
+        double accelerationDistance = displacementAcceleration * deltaSecondsSquared / 2; // extra distance travelled due to gained velocity by accelerating
+        double totalTravelDistance = (sphereVelocity * deltaSeconds) + accelerationDistance;
+        spherePosition += glm::vec3(1.0f, 0.0f, 0.0f) * (float) totalTravelDistance;
         sphereVelocity += (float) displacementVelocity;
-        spherePosition += glm::vec3(1.0f, 0.0f, 0.0f) * sphereVelocity;
         meshRenderer.setTransform(planetID, glm::translate(glm::identity<glm::mat4>(), spherePosition));
     }
 
