@@ -10,6 +10,9 @@
 #include <game/states/springdemo.h>
 #include <game/states/orbitdemo.h>
 
+#include <engine/entity/entityreference.h>
+#include <engine/entity/entityregistry.h>
+
 namespace gameState {
     class MainGameState : public gameState::BaseGameState {
 
