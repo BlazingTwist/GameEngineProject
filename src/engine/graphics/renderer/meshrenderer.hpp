@@ -1,7 +1,6 @@
 #pragma once
 
-#include "../core/shader.hpp"
-#include "../camera.hpp"
+#include "../core/texture.hpp"
 #include "glm/glm.hpp"
 #include "mesh.hpp"
 #include <vector>
@@ -16,7 +15,11 @@ namespace graphics {
     public:
         MeshRenderer() = default;
 
-        void draw(const Mesh &_mesh, const Texture2D &_texture, const Texture2D &phongData, const glm::mat4 &_transform);
+        unsigned int draw(const Mesh &_mesh, Texture2D::Handle _texture, Texture2D::Handle _phongData, const glm::mat4 &_transform);
+        
+        void setTransform(const unsigned int &meshID, const glm::mat4 &_transform);
+        
+        void transform(const unsigned int &meshID, const glm::mat4 &_transform);
 
         void present(const unsigned int &programID);
 
@@ -25,14 +28,14 @@ namespace graphics {
     private:
         unsigned int currentProgramID = -1;
         GLint glsl_object_to_world_matrix = 0;
-        
-        struct MeshRenderData{
+
+        struct MeshRenderData {
             Mesh meshData;
-            const Texture2D &textureData;
-            const Texture2D &phongData;
-            const glm::mat4 &transform;
+            Texture2D::Handle textureData = nullptr;
+            Texture2D::Handle phongData = nullptr;
+            glm::mat4 transform;
         };
-        
+
         std::vector<MeshRenderData *> meshBuffer = {};
 
     };
