@@ -20,6 +20,7 @@ namespace graphics {
                                       -_size.y * _origin.y, _size.y * (1.f - _origin.y),
                                       _zNear, _zFar)),
               m_view(glm::identity<glm::mat4>()) {
+        cameraPosition += glm::vec3(0.0f, 0.0f, _zNear);
         updateMatrices();
     }
 

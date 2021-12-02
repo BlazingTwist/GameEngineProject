@@ -10,7 +10,7 @@ namespace gameState {
     static constexpr auto defaultSunVelocity = glm::vec3(0.5f, 0.125f, 0.0f);
 
     static void printControls() {
-        spdlog::info("Spring Demo Controls:");
+        spdlog::info("Orbit Demo Controls:");
         spdlog::info("- WASD + EQ = Camera Movement");
         spdlog::info("- Mouse = Camera Yaw/Pitch");
         spdlog::info("- R/F = increase / decrease light range");
