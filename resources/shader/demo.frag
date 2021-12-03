@@ -30,8 +30,8 @@ void main()
     vec4 texColor = texture(tx_color, uv_coord_frag);
     vec4 phongData = texture(tx_phong, uv_coord_frag);
     vec3 ambientColor = max(phongData.r * ambient_light, 0.0f);
-    vec3 diffuseColor;
-    vec3 specularColor;
+    vec3 diffuseColor = vec3(0.0f, 0.0f, 0.0f);
+    vec3 specularColor = vec3(0.0f, 0.0f, 0.0f);
 
     // TODO light bounces? occlusion?
     if (light_type == LIGHT_TYPE_DIRECTIONAL){
