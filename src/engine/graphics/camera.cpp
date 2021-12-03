@@ -76,7 +76,8 @@ namespace graphics {
         cameraRight = RIGHT_VECTOR;
         cameraUp = UP_VECTOR;
         cameraForward = FORWARD_VECTOR;
-        rotate(yawAngle, pitchAngle, rollAngle);
+        _rotate(yawAngle, pitchAngle, rollAngle);
+        updateTransform();
     }
 
     void Camera::setRotation(const glm::mat3 &rotationMatrix) {
@@ -87,6 +88,18 @@ namespace graphics {
     }
 
     void Camera::rotate(const float &yawAngle, const float &pitchAngle, const float &rollAngle) {
+        _rotate(yawAngle, pitchAngle, rollAngle);
+        updateTransform();
+    }
+
+    void Camera::rotate(const mat3 &rotationMatrix) {
+        cameraRight = rotationMatrix * cameraRight;
+        cameraUp = rotationMatrix * cameraUp;
+        cameraForward = rotationMatrix * cameraForward;
+        updateTransform();
+    }
+
+    void Camera::_rotate(const float &yawAngle, const float &pitchAngle, const float &rollAngle) {
         if (yawAngle == 0.0f && pitchAngle == 0.0f && rollAngle == 0.0f) {
             return;
         }
@@ -115,15 +128,6 @@ namespace graphics {
             cameraRight = rollRotationMatrix * cameraRight;
             cameraUp = rollRotationMatrix * cameraUp;
         }
-
-        updateTransform();
-    }
-
-    void Camera::rotate(const mat3 &rotationMatrix) {
-        cameraRight = rotationMatrix * cameraRight;
-        cameraUp = rotationMatrix * cameraUp;
-        cameraForward = rotationMatrix * cameraForward;
-        updateTransform();
     }
 
 }

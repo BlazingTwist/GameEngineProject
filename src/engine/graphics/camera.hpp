@@ -63,6 +63,8 @@ namespace graphics {
 
         void updateTransform();
 
+        void _rotate(const float &yawAngle, const float &pitchAngle, const float &rollAngle);
+
         glm::mat4 m_projection;
         glm::mat4 m_view;
         glm::mat4 m_viewProjection;
