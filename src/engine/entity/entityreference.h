@@ -2,7 +2,6 @@
 #define ACAENGINE_ENTITYREFERENCE_H
 
 #include <vector>
-#include <typeindex>
 
 namespace entity {
     struct EntityReference {

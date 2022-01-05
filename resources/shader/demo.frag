@@ -34,6 +34,7 @@ void main()
     vec3 specularColor = vec3(0.0f, 0.0f, 0.0f);
 
     // TODO light bounces? occlusion?
+    // TODO rewrite x/distance stuff to use (1+(x/distance)) instead of clamping (?).
     if (light_type == LIGHT_TYPE_DIRECTIONAL){
         // direction, color, intensity
 
