@@ -16,6 +16,8 @@ namespace gameState {
         entity::EntityReference *ref3 = registry.createEntity<entity::ExComp2>(entity::ExComp2());
         
         spdlog::info("ref1: comp1: {} | comp2: {}", registry.getComponentData<entity::ExComp1>(ref1)->data, registry.getComponentData<entity::ExComp2>(ref1)->data);
+        spdlog::info("ref2: comp2: {} | comp3: {}", registry.getComponentData<entity::ExComp2>(ref2)->data, registry.getComponentData<entity::ExComp3>(ref2)->data);
+        spdlog::info("ref3: comp2: {} | comp3: {}", registry.getComponentData<entity::ExComp2>(ref3)->data, registry.getComponentData<entity::ExComp3>(ref3).has_value());
 
         registry.eraseEntity(ref1);
         registry.eraseEntity(ref2);

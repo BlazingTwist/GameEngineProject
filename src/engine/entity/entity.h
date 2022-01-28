@@ -6,6 +6,9 @@
 
 namespace entity {
     struct Entity {
+        /**
+         * A mapping of type_index to componentIDs
+         */
         std::unordered_map<std::type_index, int> componentMap = {};
     };
 }

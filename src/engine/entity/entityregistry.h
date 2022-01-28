@@ -26,7 +26,7 @@ namespace entity {
 
     private:
         template<typename T, typename ...T_Args>
-        void prepareComponents(const int &entityRefID,
+        void prepareComponents(const int entityRefID,
                                std::unordered_map<std::type_index, int> &componentMap, T const &firstComponent, T_Args const &...otherComps) {
             auto typeIndex = std::type_index(typeid(T));
             ComponentRegistry *componentRegistry = ComponentRegistry::getInstance(typeIndex);

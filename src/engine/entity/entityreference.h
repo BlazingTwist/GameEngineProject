@@ -17,7 +17,7 @@ namespace entity {
             this->_referenceID = refID;
         }
 
-        [[nodiscard]] const int &getReferenceID() const {
+        [[nodiscard]] int getReferenceID() const {
             return _referenceID;
         }
 
