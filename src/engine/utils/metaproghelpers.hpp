@@ -1,5 +1,6 @@
 #pragma once
 
+#include <typeindex>
 #include <vector>
 
 namespace utils {
