@@ -29,8 +29,8 @@ namespace gameState {
         GameStateManager() = default;
 
         std::vector<gameState::BaseGameState *> gameStates = {};
-        std::chrono::time_point<std::chrono::steady_clock> lastUpdateTime = std::chrono::high_resolution_clock::now();
-        std::chrono::time_point<std::chrono::steady_clock> lastDrawTime = std::chrono::high_resolution_clock::now();
+        std::chrono::time_point<std::chrono::high_resolution_clock> lastUpdateTime = std::chrono::high_resolution_clock::now();
+        std::chrono::time_point<std::chrono::high_resolution_clock> lastDrawTime = std::chrono::high_resolution_clock::now();
 
     };
 }
