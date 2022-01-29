@@ -74,6 +74,7 @@ namespace entity {
             for (const auto &typeID_componentID_Pair: entities[refID].second.componentMap) {
                 removeComponent(typeID_componentID_Pair.first, typeID_componentID_Pair.second);
             }
+            entities[refID].second.componentMap.clear();
 
             // update entity list
             if (refID == entities.size() - 1) {
@@ -173,6 +174,7 @@ namespace entity {
                 return;
             }
             removeComponent(componentTypeID, componentMap[componentTypeID]);
+            componentMap.erase(componentTypeID);
         }
 
         void removeComponent(std::type_index componentTypeID, int componentID) {
