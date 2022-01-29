@@ -94,12 +94,16 @@ access/management of these Registries to the `EntityRegistry`.
 #### Executing Actions on Entities
 ```c++
 // Specification
-//  Execute an Action on all entities having the components
-//  expected by Action::operator(component_type&...).
-//  In addition, the entity itself is provided,
-//  if the first parameter is of type Entity
+//  Execute an Action on all entities having the components expected by Action::operator(component_type&...).
+//  In addition, the entity itself is provided, if the first parameter is of type Entity
 template<typename Action>
-void execute(const Action& _action) {}
+void execute(const Action& _action);
 
-// Implementation TODO
+// Implementation
+//  Execute an Action on all entities having the components expected by Action::operator(const TComponent ...).
+//  In addition, the EntityReference is provided, if the first parameter is of type EntityReference. (const EntityReference *)
+//
+//  main difference: Components are not passed as reference, Entity passed as const pointer.
+template<typename Action>
+void execute(const Action &action);
 ```

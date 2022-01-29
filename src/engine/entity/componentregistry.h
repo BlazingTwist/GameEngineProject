@@ -8,17 +8,36 @@
 
 namespace entity {
     struct ExComp1 {
+        ExComp1() {}
+
+        ExComp1(int data) : data(data) {}
+
         int data = 1337;
     };
+
     struct ExComp2 {
+        ExComp2() {}
+
+        ExComp2(float data) : data(data) {}
+
         float data = 69.420f;
     };
+
     struct ExComp3 {
+        ExComp3() {}
+
+        ExComp3(double data) : data(data) {}
+
         double data = 1234.5678;
     };
 
     class ComponentRegistry {
     public:
+        /**
+         * Find or Create a Component-Registry for the specified Component-Type.
+         * @param typeIndex type_index of the Component-Type
+         * @return A ComponentRegistry instance for the Component-Type
+         */
         static ComponentRegistry *getInstance(std::type_index typeIndex) {
             static std::unordered_map<std::type_index, ComponentRegistry *> registryInstances = {};
             if (registryInstances.find(typeIndex) == registryInstances.end()) {
@@ -29,17 +48,24 @@ namespace entity {
             return registryInstances[typeIndex];
         }
 
+        /**
+         * Store Component-Data for a given Entity.
+         * @tparam T_component Type of the Component to store
+         * @param entityID EntityID to the Entity the Component belongs to
+         * @param componentData Component-Data to store
+         * @return The Component-ID the Component was stored under
+         */
         template<typename T_component>
-        int addComponent(int entityReferenceID, T_component componentData) {
+        int addComponent(int entityID, T_component componentData) {
             // http://www.cplusplus.com/forum/beginner/155821/
             // http://en.cppreference.com/w/cpp/types/is_trivially_copyable
             static_assert(std::is_trivially_copyable<T_component>::value, "not a TriviallyCopyable type");
             checkComponentSize((int) sizeof(T_component));
-            
-            // copy entityReferenceID to componentsBytes
-            const auto *entityReferenceID_bytes = reinterpret_cast<std::byte *>(&entityReferenceID);
-            std::copy(entityReferenceID_bytes, entityReferenceID_bytes + intByteSize, std::back_inserter(componentsBytes));
-            
+
+            // copy entityID to componentsBytes
+            const auto *entityID_bytes = reinterpret_cast<std::byte *>(&entityID);
+            std::copy(entityID_bytes, entityID_bytes + intByteSize, std::back_inserter(componentsBytes));
+
             // copy componentData to componentsBytes
             const auto *componentData_bytes = reinterpret_cast<std::byte *>(std::addressof(componentData));
             std::copy(componentData_bytes, componentData_bytes + componentByteSize, std::back_inserter(componentsBytes));
@@ -49,6 +75,23 @@ namespace entity {
             return componentID;
         }
 
+        /**
+         * Update the EntityID of a stored component.
+         * @param componentID ComponentID of the component whose EntityID changed
+         * @param newEntityID new value of the EntityID
+         */
+        void setEntityID(int componentID, int newEntityID) {
+            const auto *newEntityID_begin = reinterpret_cast<const std::byte *>(&newEntityID);
+            const auto componentEntityID_begin = componentsBytes.begin() + (componentID * (intByteSize + componentByteSize));
+            std::copy(newEntityID_begin, newEntityID_begin + intByteSize, componentEntityID_begin);
+        }
+
+        /**
+         * Update the Component-Data of a stored component
+         * @tparam T_component Type of the Component to store.
+         * @param componentID ComponentID of the component to modify.
+         * @param componentData Component-Data to store.
+         */
         template<typename T_component>
         void setComponentData(int componentID, T_component componentData) {
             const auto *componentData_begin = reinterpret_cast<const std::byte *>(std::addressof(componentData));
@@ -58,9 +101,10 @@ namespace entity {
         }
 
         /**
+         * Remove a component from this Registry.
          * @param componentId ID of the component to be removed
-         * @param movedEntityID if a component was moved, will be assigned the ID of the entity containing the moved component 
-         * @param movedComponentID if a component was moved, will be assigned the new ID of the moved component
+         * @param movedEntityID if a component was moved, will be assigned the ID of the entity containing the moved component (if assigned, value is in range [0,])
+         * @param movedComponentID if a component was moved, will be assigned the new ID of the moved component (if assigned, value is in range [0,])
          */
         void removeComponent(int componentId, int &movedEntityID, int &movedComponentID) {
             const auto removeComponent_begin = componentsBytes.begin() + (componentId * (intByteSize + componentByteSize));
@@ -85,6 +129,12 @@ namespace entity {
             componentCount--;
         }
 
+        /**
+         * Retrieve the Component-Data of a ComponentID.
+         * @tparam T_component Type of the Component to retrieve
+         * @param componentId ComponentID to look up
+         * @return ComponentData stored for this ID
+         */
         template<typename T_component>
         [[nodiscard]] T_component getComponentData(const int componentId) const {
             T_component result;
