@@ -50,7 +50,9 @@ namespace entity {
         EntityReference *createEntity(T_Components...args) {
             auto *ref = new EntityReference((int) entities.size());
             Entity entityData;
-            prepareComponents(ref->getReferenceID(), entityData.componentMap, args...);
+            if constexpr(sizeof ...(T_Components) > 0){
+                prepareComponents(ref->getReferenceID(), entityData.componentMap, args...);
+            }
 
             entities.emplace_back(ref, entityData);
             return ref;
