@@ -150,7 +150,7 @@ namespace entity {
          * @return Component-Data or empty optional
          */
         template<typename T_component>
-        [[nodiscard]] std::optional<const T_component> getComponentData(const EntityReference *reference) const {
+        [[nodiscard]] std::optional<T_component> getComponentData(const EntityReference *reference) const {
             if (reference->isExpired()) {
                 return std::nullopt;
             }
@@ -188,7 +188,7 @@ namespace entity {
 
     public:
         /**
-         * Execute an Action on all entities having the components expected by Action::operator(const TComponent ...).
+         * Execute an Action on all entities having the components expected by Action::operator(TComponent ...).
          * In addition, the EntityReference is provided, if the first parameter is of type EntityReference. (const EntityReference *)
          * @tparam Action deducted Functor type
          * @param action Functor to call once for every matching Entity

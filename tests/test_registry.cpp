@@ -75,23 +75,24 @@ int main() {
     }
 
     int sum = 0;
-    registry.execute([&sum](const Foo foo) { sum += foo.i; });
+    registry.execute([&sum](Foo foo) { sum += foo.i; });
     // without auto deduction
     // registry.execute<Foo>([&sum](const Foo& foo) { sum += foo.i; });
     EXPECT(sum == 10 * 11 / 2 - 3, "Execute action on a single component type.");
 
     sum = 0;
-    registry.execute([&sum](const Bar bar, const Foo foo) { sum += foo.i - 2 * static_cast<int>(bar.f); });
+    registry.execute([&sum](Bar bar, Foo foo) { sum += foo.i - 2 * static_cast<int>(bar.f); });
     //registry.execute<Bar,Foo>([&sum](const Bar& bar, const Foo& foo) { sum += foo.i - 2 * static_cast<int>(bar.f); });
     EXPECT(sum == -3 - 6 - 9, "Execute action on multiple component types.");
 
     // registry.execute<Entity, Bar>([&](Entity ent, Bar& bar)
     {
-        registry.execute([&](const entity::EntityReference *ent, const Bar bar) {
+        registry.execute([&](const entity::EntityReference *ent, Bar bar) {
             auto pBar = registry.getComponentData<Bar>(ent);
             EXPECT(pBar, "Execute provides the correct entity.");
             EXPECT(pBar->f == bar.f, "Execute provides the correct entity.");
-            registry.addOrSetComponent(ent, Bar{-1.f}); // TODO I'm have mixed feelings about this.
+            bar.f = -1.f;
+            registry.addOrSetComponent(ent, bar);
         });
     }
 

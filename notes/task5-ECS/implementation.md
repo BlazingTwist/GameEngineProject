@@ -100,7 +100,7 @@ template<typename Action>
 void execute(const Action& _action);
 
 // Implementation
-//  Execute an Action on all entities having the components expected by Action::operator(const TComponent ...).
+//  Execute an Action on all entities having the components expected by Action::operator(TComponent ...).
 //  In addition, the EntityReference is provided, if the first parameter is of type EntityReference. (const EntityReference *)
 //
 //  main difference: Components are not passed as reference, Entity passed as const pointer.
