@@ -2,6 +2,41 @@
 
 namespace gameState {
 
+    template<typename T>
+    static std::type_index getTypeIndex() {
+        return std::type_index(typeid(T));
+    }
+
+    template<typename ...Ts>
+    static void gatherTypeIDs(std::vector<std::type_index> &indexVector) {
+        indexVector = {getTypeIndex<Ts>()...};
+    }
+
+    /**
+     * @tparam Functor auto-deduced Type that overrides the call operator 'operator()'
+     * @tparam Args auto-deduced call parameter Types
+     * @param typeIndices a vector that will be filled with the parameters type_index in order
+     */
+    template<typename Functor, typename... Args>
+    static void unpackFunctorArguments(void(Functor::*)(Args...) const, std::vector<std::type_index> &typeIndices) {
+        gatherTypeIDs<Args...>(typeIndices);
+    }
+
+    /**
+     * @tparam Functor auto-deduced Type that overrides the call operator 'operator()'
+     * @tparam Args auto-deduced call parameter Types
+     * @param typeIndices a vector that will be filled with the parameters type_index in order
+     */
+    template<typename Functor, typename... Args>
+    static void unpackFunctorArguments(void(Functor::*)(Args...), std::vector<std::type_index> &typeIndices) {
+        gatherTypeIDs<Args...>(typeIndices);
+    }
+    
+    template<typename Functor>
+    static void unpackFunctor(Functor functor, std::vector<std::type_index> &typeIndices){
+        unpackFunctorArguments(&Functor::operator(), typeIndices);
+    }
+    
     static void printInfo() {
         spdlog::info("Starting Main State.");
         spdlog::info("- Press [1] to enter spring demo");
@@ -11,15 +46,39 @@ namespace gameState {
         spdlog::info("- Press [5] to exit this state");
 
         auto &registry = entity::EntityRegistry::getInstance();
-        entity::EntityReference *ref1 = registry.createEntity<entity::ExComp1, entity::ExComp2>(entity::ExComp1(), entity::ExComp2());
-        entity::EntityReference *ref2 = registry.createEntity<entity::ExComp2, entity::ExComp3>(entity::ExComp2(), entity::ExComp3());
-        entity::EntityReference *ref3 = registry.createEntity<entity::ExComp2>(entity::ExComp2());
-        
-        spdlog::info("ref1: comp1: {} | comp2: {}", registry.getComponentData<entity::ExComp1>(ref1)->data, registry.getComponentData<entity::ExComp2>(ref1)->data);
-        spdlog::info("ref2: comp2: {} | comp3: {}", registry.getComponentData<entity::ExComp2>(ref2)->data, registry.getComponentData<entity::ExComp3>(ref2)->data);
-        spdlog::info("ref3: comp2: {} | comp3: {}", registry.getComponentData<entity::ExComp2>(ref3)->data, registry.getComponentData<entity::ExComp3>(ref3).has_value());
+        entity::EntityReference *ref1 = registry.createEntity<entity::ExComp1, entity::ExComp2>(entity::ExComp1(11), entity::ExComp2(1.2f));
+        entity::EntityReference *ref2 = registry.createEntity<entity::ExComp2, entity::ExComp3>(entity::ExComp2(2.2f), entity::ExComp3(2.3));
+        entity::EntityReference *ref3 = registry.createEntity<entity::ExComp3>(entity::ExComp3(3.3));
 
+        spdlog::info("created entities: ref1 = {} | ref2 = {} | ref3 = {}", ref1->getReferenceID(), ref2->getReferenceID(), ref3->getReferenceID());
+        spdlog::info("ref1: comp1: {} | comp2: {}", registry.getComponentData<entity::ExComp1>(ref1)->data,
+                     registry.getComponentData<entity::ExComp2>(ref1)->data);
+        spdlog::info("ref2: comp2: {} | comp3: {}", registry.getComponentData<entity::ExComp2>(ref2)->data,
+                     registry.getComponentData<entity::ExComp3>(ref2)->data);
+        spdlog::info("ref3: has comp2: {} | comp3: {}", registry.getComponentData<entity::ExComp2>(ref3).has_value(),
+                     registry.getComponentData<entity::ExComp3>(ref3)->data);
+
+        spdlog::info("");
+        registry.execute([](const entity::ExComp3 comp3){
+            spdlog::info("got comp3: {}", comp3.data);
+        });
+        spdlog::info("");
+        registry.execute([](const entity::ExComp3 comp3, const entity::ExComp2 comp2){
+            spdlog::info("got comp3: {} | comp2: {}", comp3.data, comp2.data);
+        });
+        spdlog::info("");
+        registry.execute([](const entity::EntityReference *entity, const entity::ExComp3 comp3){
+            spdlog::info("got Entity: {} | comp3: {}", entity->getReferenceID(), comp3.data);
+        });
+        spdlog::info("");
+        registry.execute([](const entity::EntityReference *entity, const entity::ExComp3 comp3, const entity::ExComp2 comp2){
+            spdlog::info("got Entity: {} | comp3: {} | comp2: {}", entity->getReferenceID(), comp3.data, comp2.data);
+        });
+        spdlog::info("");
+        
         registry.eraseEntity(ref1);
+        spdlog::info("erased ref1: has comp1: {} | has comp2: {}", registry.getComponentData<entity::ExComp1>(ref1).has_value(),
+                     registry.getComponentData<entity::ExComp2>(ref1).has_value());
         registry.eraseEntity(ref2);
         registry.eraseEntity(ref3);
         delete ref1;
