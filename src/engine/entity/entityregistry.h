@@ -119,11 +119,11 @@ namespace entity {
             int entityRefID = reference->getReferenceID();
             auto &componentMap = entities[entityRefID].second.componentMap;
             if (componentMap.find(typeIndex) == componentMap.end()) {
-                int componentReference = ComponentRegistry::getInstance(typeIndex)->template addComponent(entityRefID, component);
+                int componentReference = ComponentRegistry::getInstance(typeIndex)->template addComponent<T_component>(entityRefID, component);
                 componentMap[typeIndex] = componentReference;
             } else {
                 int componentID = componentMap[typeIndex];
-                ComponentRegistry::getInstance(typeIndex)->template setComponentData(componentID, component);
+                ComponentRegistry::getInstance(typeIndex)->template setComponentData<T_component>(componentID, component);
             }
         }
 
