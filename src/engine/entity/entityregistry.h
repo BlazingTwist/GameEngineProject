@@ -202,15 +202,15 @@ namespace entity {
         // gathers argument types of Action and forwards them to _execute2
         template<typename Action, typename Functor, typename ...Args>
         void _execute(Action &&action, void(Functor::*)(Args...) const) {
-            _execute2<Action, Args...>(std::forward<>(action));
+            _execute2<Action, Args...>(std::forward<Action>(action));
         }
 
         // gathers argument types of Action and forwards them to _execute2
         template<typename Action, typename Functor, typename ...Args>
         void _execute(Action &&action, void(Functor::*)(Args...)) {
-            _execute2<Action, Args...>(std::forward<>(action));
+            _execute2<Action, Args...>(std::forward<Action>(action));
         }
-        
+
         template<typename Action, typename Arg1, typename ...Args>
         void _execute2(Action &&action) {
             constexpr bool ProvideEntity = std::is_same<Arg1, const entity::EntityReference *>::value;
@@ -231,9 +231,10 @@ namespace entity {
                     continue;
                 }
                 if constexpr(ProvideEntity) {
-                    _executeWithEntity<Args...>(std::forward<>(action), typeIndices, entityDataPair, std::make_index_sequence<ComponentCount>{});
+                    _executeWithEntity<Args...>(std::forward<Action>(action), typeIndices, entityDataPair, std::make_index_sequence<ComponentCount>{});
                 } else {
-                    _executeComponentsOnly<Arg1, Args...>(std::forward<>(action), typeIndices, entityDataPair, std::make_index_sequence<ComponentCount>{});
+                    _executeComponentsOnly<Arg1, Args...>(std::forward<Action>(action), typeIndices, entityDataPair,
+                                                          std::make_index_sequence<ComponentCount>{});
                 }
             }
         }
