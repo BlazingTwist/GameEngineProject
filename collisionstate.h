@@ -16,6 +16,8 @@
 #include <spdlog/spdlog.h>
 #include <iostream>
 #include <time.h>
+#include <engine/utils/containers/octree.hpp>
+#include <thread>
 
 namespace gameState {
     class CollisionState : public gameState::BaseGameState {
@@ -43,13 +45,8 @@ namespace gameState {
         graphics::Mesh sphereMash;
       
     
-        struct AABB
-        {
-            glm::vec3 min;
-            glm::vec3 max;
-        };
-    
-
+ 
+     
         struct Planet
        {
             
@@ -58,15 +55,14 @@ namespace gameState {
            glm::vec3 startposition;
            glm::vec3 direction;
            float velocity;
-           //part of collision
-           //glm::vec3 min;
-          //glm::vec3 max;
            float angularVelocity;
-            
+           math::AABB<3, double> aabb;
            
      
-            AABB aabb;
+             
       }; 
+
+        
 
         struct Bullet
         {
@@ -74,14 +70,38 @@ namespace gameState {
             graphics::Mesh sphereMeshes;
             glm::vec3 bullPos;
             glm::vec3 bullDirection;
-            float velocity;
+            
+            math::AABB<3, double> aabb;
          //   glm::vec3 min;
          //   glm::vec3 max;
             
         };
-
         std::vector<Planet> planetVec;
         std::vector<Bullet> bulletVec;
+      struct TreeProcessor
+        {
+            std::vector<Planet>fits;
+            Bullet m_bullet;
+            bool descend(const math::AABB <3, double> &aabb)
+            {   
+                if (aabb.intersect(m_bullet.aabb))
+                    return true;
+                else return false;
+            }
+            void process(const math::AABB <3, double> &aabb, const Planet& planet)
+            {
+                if (aabb.intersect(planet.aabb))
+                    spdlog::info(planet.planetID);
+                    fits.push_back(planet);
+                   
+            }
+
+            TreeProcessor(Bullet bullet) :
+                m_bullet(bullet)
+            {}
+         }; 
+     
+       
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;
         
@@ -90,7 +110,7 @@ namespace gameState {
         bool hotkey_exit_isDown = false;
         int randomArray[50];
         int randomArray2[50];
-
+        
         void createBullet(const long long int& deltaMicroseconds);
         void updatePos(const long long int& deltaMicroseconds);
         void bindCamera();
@@ -101,11 +121,11 @@ namespace gameState {
         void loadShaders();
 
         void loadGeometry();
-
+        void createPlanets(const long long& deltaMicroseconds);
         void initializeScene();
 
         void bindLighting();
 
     };
 }
-#endif //ACAENGINE_COLLISIONSTATE_H
+#endif //ACAENGINE_COLLISIONSTATE_
