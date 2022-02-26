@@ -35,6 +35,15 @@ namespace utils {
         gatherTypeIDs<Args...>(typeIndices);
     }
 
+    // Allows access to a functor's signature through template argument deduction.
+    // For a usage example see Registry::execute().
+    template<typename T, typename... Args>
+    struct UnpackFunction {
+        explicit UnpackFunction(void(T::*)(Args ...) const) {};
+
+        explicit UnpackFunction(void(T::*)(Args ...)) {};
+    };
+
     // Helper for type deduction that does not impose any conditions on T.
     template<typename T>
     struct TypeHolder {
