@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <typeindex>
+#include <algorithm>
 
 namespace entity {
     struct Entity {

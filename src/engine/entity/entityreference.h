@@ -1,8 +1,6 @@
 ﻿#ifndef ACAENGINE_ENTITYREFERENCE_H
 #define ACAENGINE_ENTITYREFERENCE_H
 
-#include <vector>
-
 namespace entity {
     struct EntityReference {
     public:
