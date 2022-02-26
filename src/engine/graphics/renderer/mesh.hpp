@@ -2,7 +2,6 @@
 
 #include <engine/graphics/core/geometrybuffer.hpp>
 #include "../../utils/meshloader.hpp"
-#include <engine/utils/meshstripper.hpp>
 
 namespace graphics {
 
@@ -37,10 +36,14 @@ namespace graphics {
                 }
         };
 
-        const std::vector<graphics::GeometryBuffer *> &getGeometryBuffers() { return buffers; }
+        [[nodiscard]] const graphics::GeometryBuffer *getGeometryBuffer() const { return currentBuffer; }
+
+        ~Mesh() {
+            delete currentBuffer;
+        }
 
     private:
-        std::vector<graphics::GeometryBuffer *> buffers = {};
+        graphics::GeometryBuffer *currentBuffer = nullptr;
 
     };
 }

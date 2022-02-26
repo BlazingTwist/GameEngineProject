@@ -10,7 +10,11 @@ namespace graphics {
     void MeshRenderer::draw(components::Mesh &_mesh, components::Transform &_transform) {
         MeshRenderData *data = meshBuffer[_mesh.getRendererId()];
         if (data == nullptr) {
-            data = new MeshRenderData{Mesh(_mesh.getMeshData()), _mesh.getTextureData(), _mesh.getPhongData(), _transform.getTransformMatrix()};
+            data = new MeshRenderData{new Mesh(_mesh.getMeshData()), _mesh.getTextureData(), _mesh.getPhongData(), _transform.getTransformMatrix()};
+            _mesh.meshChangesHandled();
+            _mesh.textureChangesHandled();
+            _mesh.phongChangesHandled();
+            _transform.onChangesHandled();
             meshBuffer[_mesh.getRendererId()] = data;
             return;
         }
@@ -23,7 +27,8 @@ namespace graphics {
 
         if (meshChanged) {
             if (_mesh.meshHasChanged()) {
-                data->meshData = Mesh(_mesh.getMeshData());
+                delete data->meshData;
+                data->meshData = new Mesh(_mesh.getMeshData());
                 _mesh.meshChangesHandled();
             }
             if (_mesh.textureHasChanged()) {
@@ -41,9 +46,9 @@ namespace graphics {
         }
     }
 
-    unsigned int MeshRenderer::draw(const Mesh &_mesh, Texture2D::Handle _texture, Texture2D::Handle _phongData, const glm::mat4 &_transform) {
+    unsigned int MeshRenderer::draw(Mesh &_mesh, Texture2D::Handle _texture, Texture2D::Handle _phongData, const glm::mat4 &_transform) {
         auto *renderData = new MeshRenderData{
-                _mesh,
+                &_mesh,
                 _texture,
                 _phongData,
                 _transform
@@ -76,13 +81,14 @@ namespace graphics {
             glsl_object_to_world_matrix = glGetUniformLocation(programID, "object_to_world_matrix");
         }
 
-        for (const auto &meshRenderData: meshBuffer) {
+        for (const MeshRenderData *meshRenderData: meshBuffer) {
+            if (meshRenderData == nullptr) {
+                continue;
+            }
             meshRenderData->textureData->bind(0);
             meshRenderData->phongData->bind(1);
             glUniformMatrix4fv(glsl_object_to_world_matrix, 1, false, glm::value_ptr(meshRenderData->transform));
-            for (const auto &geometryBuffer: meshRenderData->meshData.getGeometryBuffers()) {
-                geometryBuffer->draw();
-            }
+            meshRenderData->meshData->getGeometryBuffer()->draw();
         }
     }
 

@@ -198,7 +198,7 @@ namespace gameState {
                                 entity::EntityRegistry::getInstance().addOrSetComponent(entity, phys);
                             });
                 });
-        
+
         components::Transform sunPosition = entity::EntityRegistry::getInstance().getComponentData<components::Transform>(sunEntity).value();
         lightData.light_position = sunPosition.getPosition();
         bindLighting();
@@ -234,14 +234,14 @@ namespace gameState {
         spdlog::info("===== Orbit Demo State paused =====");
     }
 
-    void OrbitDemoState::onExit(){
+    void OrbitDemoState::onExit() {
         spdlog::info("exiting orbit demo state");
-        
+
         entity::EntityRegistry::getInstance().eraseEntity(planetEntity);
         entity::EntityRegistry::getInstance().eraseEntity(sunEntity);
         delete planetEntity;
         delete sunEntity;
-        
+
         delete sphereInvertedMeshData;
         delete sampler;
 

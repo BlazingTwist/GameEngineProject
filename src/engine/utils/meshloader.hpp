@@ -36,6 +36,12 @@ namespace utils
 				std::optional<int> normalIdx;
 				///< id to fetch the normal from MeshData::normals
 				///< may be not set for a vertex
+
+                bool operator==(const MeshData::FaceData::VertexIndices &rhs) const {
+                    return positionIdx == rhs.positionIdx
+                           && textureCoordinateIdx == rhs.textureCoordinateIdx
+                           && normalIdx == rhs.normalIdx;
+                }
 			};
 			std::array<VertexIndices, 3> indices;
 		};
