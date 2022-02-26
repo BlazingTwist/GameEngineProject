@@ -6,22 +6,29 @@
 #include <vector>
 #include <GL/glew.h>
 #include <glm/gtc/type_ptr.hpp>
+#include "engine/components/mesh.h"
+#include "engine/components/transform.h"
 
 namespace graphics {
 
     class Texture2D;
 
+    // TODO this entire thing is really not great, please fix.
     class MeshRenderer {
     public:
         MeshRenderer() = default;
+        
+        [[nodiscard]] unsigned int requestNewMesh();
+        
+        void draw(components::Mesh &_mesh, components::Transform &_transform);
 
         unsigned int draw(const Mesh &_mesh, Texture2D::Handle _texture, Texture2D::Handle _phongData, const glm::mat4 &_transform);
         
-        void setTransform(const unsigned int &meshID, const glm::mat4 &_transform);
+        void setTransform(unsigned int meshID, const glm::mat4 &_transform);
         
-        void transform(const unsigned int &meshID, const glm::mat4 &_transform);
+        void transform(unsigned int meshID, const glm::mat4 &_transform);
 
-        void present(const unsigned int &programID);
+        void present(unsigned int programID);
 
         void clear();
 
