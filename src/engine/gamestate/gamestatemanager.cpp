@@ -21,8 +21,10 @@ namespace gameState {
             return noStateWaitDelay;
         }
 
-        if (gameStates.back()->isFinished()) {
+        gameState::BaseGameState *currentGameState = gameStates.back();
+        if (currentGameState->isFinished()) {
             gameStates.pop_back();
+            delete currentGameState;
             if (gameStates.empty()) {
                 return noStateWaitDelay;
             }
