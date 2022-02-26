@@ -5,32 +5,10 @@
 #include <optional>
 #include <typeindex>
 #include <unordered_map>
+#include "entityreference.h"
+#include <engine/utils/assert.hpp>
 
 namespace entity {
-    struct ExComp1 {
-        ExComp1() {}
-
-        ExComp1(int data) : data(data) {}
-
-        int data = 1337;
-    };
-
-    struct ExComp2 {
-        ExComp2() {}
-
-        ExComp2(float data) : data(data) {}
-
-        float data = 69.420f;
-    };
-
-    struct ExComp3 {
-        ExComp3() {}
-
-        ExComp3(double data) : data(data) {}
-
-        double data = 1234.5678;
-    };
-
     class ComponentRegistry {
     public:
         /**
@@ -40,12 +18,13 @@ namespace entity {
          */
         static ComponentRegistry *getInstance(std::type_index typeIndex) {
             static std::unordered_map<std::type_index, ComponentRegistry *> registryInstances = {};
-            if (registryInstances.find(typeIndex) == registryInstances.end()) {
+            auto findResult = registryInstances.find(typeIndex);
+            if (findResult == registryInstances.end()) {
                 auto *registry = new ComponentRegistry();
                 registryInstances[typeIndex] = registry;
                 return registry;
             }
-            return registryInstances[typeIndex];
+            return findResult->second;
         }
 
         /**
@@ -56,19 +35,20 @@ namespace entity {
          * @return The Component-ID the Component was stored under
          */
         template<typename T_component>
-        int addComponent(int entityID, T_component componentData) {
+        int addComponent(int entityID, const T_component &componentData) {
             // http://www.cplusplus.com/forum/beginner/155821/
             // http://en.cppreference.com/w/cpp/types/is_trivially_copyable
             static_assert(std::is_trivially_copyable<T_component>::value, "not a TriviallyCopyable type");
             checkComponentSize((int) sizeof(T_component));
 
+            std::size_t dataSize = componentsBytes.size();
+            componentsBytes.resize(dataSize + intByteSize + componentByteSize);
+
             // copy entityID to componentsBytes
-            const auto *entityID_bytes = reinterpret_cast<std::byte *>(&entityID);
-            std::copy(entityID_bytes, entityID_bytes + intByteSize, std::back_inserter(componentsBytes));
+            *reinterpret_cast<int *>(componentsBytes.data() + dataSize) = entityID;
 
             // copy componentData to componentsBytes
-            const auto *componentData_bytes = reinterpret_cast<std::byte *>(std::addressof(componentData));
-            std::copy(componentData_bytes, componentData_bytes + componentByteSize, std::back_inserter(componentsBytes));
+            *reinterpret_cast<T_component *>(componentsBytes.data() + dataSize + intByteSize) = componentData;
 
             int componentID = componentCount;
             componentCount++;
@@ -81,9 +61,7 @@ namespace entity {
          * @param newEntityID new value of the EntityID
          */
         void setEntityID(int componentID, int newEntityID) {
-            const auto *newEntityID_begin = reinterpret_cast<const std::byte *>(&newEntityID);
-            const auto componentEntityID_begin = componentsBytes.begin() + (componentID * (intByteSize + componentByteSize));
-            std::copy(newEntityID_begin, newEntityID_begin + intByteSize, componentEntityID_begin);
+            *reinterpret_cast<int *>(componentsBytes.data() + (componentID * (intByteSize + componentByteSize))) = newEntityID;
         }
 
         /**
@@ -93,11 +71,8 @@ namespace entity {
          * @param componentData Component-Data to store.
          */
         template<typename T_component>
-        void setComponentData(int componentID, T_component componentData) {
-            const auto *componentData_begin = reinterpret_cast<const std::byte *>(std::addressof(componentData));
-            const std::byte *componentData_end = componentData_begin + componentByteSize;
-            const auto registryDataBytes_begin = componentsBytes.begin() + (componentID * (intByteSize + componentByteSize)) + intByteSize;
-            std::copy(componentData_begin, componentData_end, registryDataBytes_begin);
+        void setComponentData(int componentID, const T_component &componentData) {
+            *reinterpret_cast<T_component *>(componentsBytes.data() + (componentID * (intByteSize + componentByteSize)) + intByteSize) = componentData;
         }
 
         /**
@@ -136,7 +111,7 @@ namespace entity {
          * @return ComponentData stored for this ID
          */
         template<typename T_component>
-        [[nodiscard]] T_component getComponentData(const int componentId) const {
+        [[nodiscard]] T_component getComponentData(int componentId) const {
             T_component result;
             auto *result_begin = reinterpret_cast<std::byte * > (std::addressof(result));
             const auto componentData_begin = componentsBytes.begin() + (componentId * (intByteSize + componentByteSize)) + intByteSize;
@@ -147,7 +122,7 @@ namespace entity {
     private:
         void checkComponentSize(const int byteSize) {
             if (componentByteSize >= 0) {
-                assert(byteSize == componentByteSize && "sizeof(T_Component) of ComponentRegistry changed during execution!");
+                ASSERT(byteSize == componentByteSize, "sizeof(T_Component) of ComponentRegistry changed during execution!");
             } else {
                 componentByteSize = byteSize;
             }

@@ -6,7 +6,7 @@ project (AcaEngine)
 #---------------------------------------------------------------------------------------
 
 # find all source and header files
-file(GLOB_RECURSE SOURCE_FILES "src/engine/*.cpp" "src/engine/*.hpp" "src/engine/*.inl" "src/game/*.cpp" "src/game/*.hpp")
+file(GLOB_RECURSE SOURCE_FILES "src/engine/*.cpp" "src/engine/*.hpp" "src/engine/*.inl" "src/engine/*.h" "src/game/*.cpp" "src/game/*.hpp" "src/game/*.h")
 
 # organize the files according to the organisation in the file system
 # from: http:#cmake.3232098.n2.nabble.com/Keep-folder-structure-in-Visual-Studio-Project-generated-with-CMake-td7586044.html
