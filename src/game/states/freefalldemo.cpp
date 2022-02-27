@@ -1,12 +1,13 @@
 ﻿#include "freefalldemo.h"
 
 namespace gameState {
-    static graphics::Sampler *sampler;
-    static constexpr auto defaultSpherePosition = glm::vec3(0.0f, 0.0f, 0.0f);
-    static constexpr auto viewportWidth = 4.0f;
-    static constexpr auto viewportHeight = 4.0f;
-    static constexpr auto viewportPosition = glm::vec2(0.5f, 0.5f);
+    static constexpr auto defaultLightRange = 100.0f;
+    static constexpr auto defaultLightIntensity = 0.75f;
 
+    static constexpr auto defaultPlanetPosition = glm::vec3(0.0f, 3.5f, 0.0f);
+    static constexpr auto defaultPlanetScale = glm::vec3(1.0f, 1.0f, 1.0f);
+    static constexpr auto defaultPlanetVelocity = glm::vec3(-2.0f, -0.5f, 0.0f);
+    static graphics::Sampler* sampler;
     static void printControls() {
         spdlog::info("Free Fall Demo Controls:");
         spdlog::info("- press [1] to reset scene");
@@ -32,27 +33,41 @@ namespace gameState {
     void FreeFallDemoState::loadShaders() {
         program.use();
 
-        worldToCameraMatrixID = glGetUniformLocation(program.getID(), "world_to_camera_matrix");
-        cameraPositionShaderID = glGetUniformLocation(program.getID(), "camera_position");
+        cameraControls.loadShaders(program.getID());
         glsl_ambient_light = glGetUniformLocation(program.getID(), "ambient_light");
     }
 
     void FreeFallDemoState::loadGeometry() {
         meshRenderer.clear();
-        mainSphereID = meshRenderer.draw(sphereMesh,
-                                         graphics::Texture2DManager::get("textures/planet1.png", *sampler),
-                                         graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler),
-                                         glm::translate(glm::identity<glm::mat4>(), glm::vec3(0.0f, 0.0f, 0.0f)));
-        transitionSphereID = meshRenderer.draw(sphereMesh,
-                                               graphics::Texture2DManager::get("textures/planet1.png", *sampler),
-                                               graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler),
-                                               glm::translate(glm::identity<glm::mat4>(), glm::vec3(0.0f, 0.0f, 0.0f)));
-    }
 
+        planetEntity = entity::EntityRegistry::getInstance().createEntity(
+            components::Transform(defaultPlanetPosition,
+                glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
+                defaultPlanetScale),
+            components::Mesh(meshRenderer.requestNewMesh(),
+                utils::MeshLoader::get("models/sphere.obj"),
+                graphics::Texture2DManager::get("textures/planet1.png", *sampler),
+                graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler)),
+            components::PhysicsObject(150'000.0, defaultPlanetVelocity)
+        );
+    const utils::MeshData::Handle sphereData = utils::MeshLoader::get("models/sphere.obj");
+}
     void FreeFallDemoState::initializeScene() {
-        spherePosition = defaultSpherePosition;
-        updateSpherePosition();
-        sphereVelocity = 0.0f;
+      
+        cameraControls.initializeScene();
+
+        lightData.light_range = defaultLightRange;
+        lightData.light_intensity = defaultLightIntensity;
+
+        entity::EntityRegistry& registry = entity::EntityRegistry::getInstance();
+
+        auto planetTransform = registry.getComponentData<components::Transform>(planetEntity).value();
+        planetTransform.setPosition(defaultPlanetPosition);
+        registry.addOrSetComponent(planetEntity, planetTransform);
+
+        auto planetPhysicsObject = registry.getComponentData<components::PhysicsObject>(planetEntity).value();
+        planetPhysicsObject._velocity = defaultPlanetVelocity;
+        registry.addOrSetComponent(planetEntity, planetPhysicsObject);
     }
 
     void FreeFallDemoState::bindLighting() {
@@ -60,38 +75,31 @@ namespace gameState {
         glUniform3fv(glsl_ambient_light, 1, glm::value_ptr(ambientLightData));
     }
 
-    void FreeFallDemoState::bindCamera() {
-        glUniformMatrix4fv(worldToCameraMatrixID, 1, GL_FALSE, glm::value_ptr(camera.getWorldToCamera()));
-        glUniform3fv(cameraPositionShaderID, 1, glm::value_ptr(camera.getPosition()));
-    }
+  
 
     FreeFallDemoState::FreeFallDemoState() :
-            camera(graphics::Camera(glm::vec2(viewportWidth, viewportHeight), viewportPosition, -10.0f, 20.0f)),
-            ambientLightData({0.7f, 0.7f, 0.7f}),
-            lightData(graphics::LightData::directional(
-                    glm::normalize(glm::vec3(-1.0f, -1.0f, 0.0f)),
-                    glm::vec3(1.0f, 1.0f, 1.0f),
-                    2.0f
-            )),
-            meshRenderer(graphics::MeshRenderer()),
-            sphereMesh(graphics::Mesh(utils::MeshLoader::get("models/sphere.obj"))) {
+        cameraControls(graphics::Camera(90.0f, 0.1f, 300.0f), glm::vec3(0.0f, 0.0f, -7.0f), 0.0f, 0.0f, 0.0f),
+        ambientLightData({ 1.4f, 1.4f, 1.4f }),
+        lightData(graphics::LightData::point(
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            defaultLightRange,
+            glm::vec3(1.0f, 1.0f, 0.8f),
+            defaultLightIntensity
+        )),
+        meshRenderer(graphics::MeshRenderer()) {
 
         sampler = new graphics::Sampler(graphics::Sampler::Filter::LINEAR, graphics::Sampler::Filter::LINEAR,
-                                        graphics::Sampler::Filter::LINEAR, graphics::Sampler::Border::MIRROR);
-        
+            graphics::Sampler::Filter::LINEAR, graphics::Sampler::Border::MIRROR);
+
         printControls();
         initializeHotkeys();
+        cameraControls.initializeCursorPosition();
         initializeShaders();
         loadShaders();
         loadGeometry();
         initializeScene();
         bindLighting();
-        bindCamera();
-    }
-
-    void FreeFallDemoState::updateSpherePosition() {
-        meshRenderer.setTransform(mainSphereID, glm::translate(glm::identity<glm::mat4>(), spherePosition));
-        meshRenderer.setTransform(transitionSphereID, glm::translate(glm::identity<glm::mat4>(), spherePosition + glm::vec3(0.0f, viewportHeight, 0.0f)));
+        cameraControls.bindCamera();
     }
 
     void FreeFallDemoState::update(const long long &deltaMicroseconds) {
@@ -114,25 +122,78 @@ namespace gameState {
         }
 
         initializeHotkeys();
-        
-        static constexpr float sphereAcceleration = 1.0f;
+
+        static constexpr float lightRangeStep = 0.1f;
+        static constexpr float lightIntensityStep = 0.05f;
+        if (input::InputManager::isKeyPressed(input::Key::R)) {
+            lightData.light_range += lightRangeStep;
+        }
+        if (input::InputManager::isKeyPressed(input::Key::F)) {
+            lightData.light_range -= lightRangeStep;
+        }
+        if (input::InputManager::isKeyPressed(input::Key::T)) {
+            lightData.light_intensity += lightIntensityStep;
+        }
+        if (input::InputManager::isKeyPressed(input::Key::G)) {
+            lightData.light_intensity -= lightIntensityStep;
+        }
+        ;
+        static float gravConstant = 9.81f;
         double deltaSeconds = (double) deltaMicroseconds / 1'000'000.0;
         double deltaSecondsSquared = deltaSeconds * deltaSeconds;
-        double velocityGain = sphereAcceleration * deltaSeconds;
-        double accelerationDistance = sphereAcceleration * deltaSecondsSquared;
-        double totalDistance = (sphereVelocity * deltaSeconds) + accelerationDistance;
-        spherePosition += glm::vec3(0.0f, -1.0f, 0.0f) * (float) totalDistance;
-        if(spherePosition.y < (-viewportHeight / 2.0f - 1.0f)){
-            spherePosition += glm::vec3 (0.0f, viewportHeight, 0.0f);
-        }
-        sphereVelocity += (float) velocityGain;
-        updateSpherePosition();
-    }
+       // double velocityGain =gravConstant * deltaSeconds;
 
-    void FreeFallDemoState::draw(const long long &deltaMicroseconds) {
+      //  double accelerationDistance = sphereAcceleration * deltaSecondsSquared;
+        //double totalDistance = (sphereVelocity * deltaSeconds) + accelerationDistance;
+     
+     
+        
+        entity::EntityRegistry::getInstance().execute(
+            [deltaSeconds, deltaSecondsSquared](const entity::EntityReference* entity2, components::Transform transform2, components::PhysicsObject phys2) {
+                entity::EntityRegistry::getInstance().execute(
+                    [entity2, transform2, phys2, deltaSeconds, deltaSecondsSquared](const entity::EntityReference* entity,
+                        components::Transform transform,
+                        components::PhysicsObject phys) {
+                            if (entity->getReferenceID() == entity2->getReferenceID()) {
+                                return;
+                            }
+                            
+                            glm::vec3 aToB = transform2.getPosition() - transform.getPosition();
+                            glm::vec3 aToBNormal = glm::normalize(aToB);
+                            float distanceSquared = glm::dot(aToB, aToB);
+                            double acceleration = gravConstant;
+                            double velocityGain = acceleration * deltaSeconds;
+                            double accelerationDistance = acceleration * deltaSecondsSquared / 2;
+                            transform.setPosition(
+                                transform.getPosition() + (phys._velocity * (float)deltaSeconds) + (aToBNormal * (float)accelerationDistance));
+                            phys._velocity = phys._velocity + (aToBNormal * (float)velocityGain);
+                            entity::EntityRegistry::getInstance().addOrSetComponent(entity, transform);
+                            entity::EntityRegistry::getInstance().addOrSetComponent(entity, phys);
+                    });
+            });
+
+        components::Transform planetPosition = entity::EntityRegistry::getInstance().getComponentData<components::Transform>(planetEntity).value();
+        lightData.light_position = planetPosition.getPosition();
+        bindLighting();
+    }
+    
+
+    void OrbitDemoState::draw(const long long& deltaMicroseconds) {
+        auto& registry = entity::EntityRegistry::getInstance();
+        registry.execute([this, &registry](const entity::EntityReference* entity, components::Mesh mesh, components::Transform transform) {
+            bool meshChanged = mesh.hasAnyChanges();
+            bool transformChanged = transform.hasTransformChanged();
+            meshRenderer.draw(mesh, transform);
+            if (meshChanged) {
+                registry.addOrSetComponent(entity, mesh);
+            }
+            if (transformChanged) {
+                registry.addOrSetComponent(entity, transform);
+            }
+            });
+
         meshRenderer.present(program.getID());
     }
-
     void FreeFallDemoState::onResume() {
         printControls();
         initializeHotkeys();
@@ -143,5 +204,15 @@ namespace gameState {
 
     void FreeFallDemoState::onPause() {
         spdlog::info("===== Free Fall Demo State paused =====");
+    }
+    void FreeFallDemoState::onExit() {
+        spdlog::info("exiting orbit demo state");
+
+        entity::EntityRegistry::getInstance().eraseEntity(planetEntity);
+        
+        delete planetEntity;
+        delete sampler;
+
+        _isFinished = true;
     }
 }
