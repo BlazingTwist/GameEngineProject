@@ -224,6 +224,11 @@ namespace entity {
             _execute(action, &Action::operator());
         }
 
+        template<typename ...Args>
+        void execute(void(*action)(Args...)) {
+            _execute<Args...>(action);
+        }
+
     private:
         // gathers argument types of Action and forwards them to _execute2
         template<typename Action, typename Functor, typename ...Args>
@@ -234,6 +239,11 @@ namespace entity {
         // gathers argument types of Action and forwards them to _execute2
         template<typename Action, typename Functor, typename ...Args>
         void _execute(Action &&action, void(Functor::*)(Args...)) {
+            _execute2<Action, Args...>(std::forward<Action>(action));
+        }
+        
+        template<typename ...Args, typename Action>
+        void _execute(Action &&action){
             _execute2<Action, Args...>(std::forward<Action>(action));
         }
 
