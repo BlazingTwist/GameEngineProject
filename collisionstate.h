@@ -43,7 +43,7 @@ namespace gameState {
         graphics::LightData lightData;
         graphics::MeshRenderer meshRenderer;
         graphics::Mesh sphereMash;
-      
+        
     
  
      
@@ -80,6 +80,7 @@ namespace gameState {
         std::vector<Bullet> bulletVec;
       struct TreeProcessor
         {
+           int wert = 0;
             std::vector<Planet>fits;
             Bullet m_bullet;
             bool descend(const math::AABB <3, double> &aabb)
@@ -92,8 +93,16 @@ namespace gameState {
             {
                 if (aabb.intersect(planet.aabb))
                     spdlog::info(planet.planetID);
-                    fits.push_back(planet);
-                   
+                    for(int i=0; i<fits.size();i++)
+                    {
+                        ;
+                        if (planet.planetID != fits[i].planetID)
+                            wert++;
+                    }
+                    if (wert == fits.size()) {
+                        fits.push_back(planet);
+                    }
+                    wert = 0;
             }
 
             TreeProcessor(Bullet bullet) :
@@ -108,8 +117,8 @@ namespace gameState {
         bool hotkey_reset_isDown = false;
         bool hotkey_mainState_isDown = false;
         bool hotkey_exit_isDown = false;
-        int randomArray[50];
-        int randomArray2[50];
+        int randomArray[100];
+        int randomArray2[100];
         
         void createBullet(const long long int& deltaMicroseconds);
         void updatePos(const long long int& deltaMicroseconds);
@@ -123,7 +132,7 @@ namespace gameState {
         void loadGeometry();
         void createPlanets(const long long& deltaMicroseconds);
         void initializeScene();
-
+        void reloadGeometry();
         void bindLighting();
 
     };
