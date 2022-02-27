@@ -30,31 +30,31 @@ namespace gameState {
             gameState::GameStateManager::getInstance().startGameState(new gameState::SpringDemoState());
             return;
         }
-
+        
         if (!hotkey_freeFallDemo_isDown && input::InputManager::isKeyPressed(input::Key::Num2)) {
             spdlog::info("main state -> free fall demo");
             gameState::GameStateManager::getInstance().startGameState(new gameState::FreeFallDemoState());
             return;
         }
-
+        
         if (!hotkey_orbitDemo_isDown && input::InputManager::isKeyPressed(input::Key::Num3)) {
             spdlog::info("main state -> orbit demo");
             gameState::GameStateManager::getInstance().startGameState(new gameState::OrbitDemoState());
             return;
         }
-
+        
         if (!hotkey_mainState_isDown && input::InputManager::isKeyPressed(input::Key::Num4)) {
             spdlog::info("main state -> main state");
             gameState::GameStateManager::getInstance().startGameState(new MainGameState());
             return;
         }
-
+        
         if (!hotkey_exit_isDown && input::InputManager::isKeyPressed(input::Key::Num5)) {
             spdlog::info("main state FINISHED");
             _isFinished = true;
             return;
         }
-
+       
         initializeControls();
     }
 
