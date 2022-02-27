@@ -66,7 +66,7 @@ namespace components {
 
     private:
         void updateTransformMatrix() {
-            transformMatrix = glm::translate(glm::toMat4(_rotation) * glm::scale(glm::identity<glm::mat4>(), _scale), _position);
+            transformMatrix = glm::translate(glm::identity<glm::mat4>(), _position) * glm::toMat4(_rotation) * glm::scale(glm::identity<glm::mat4>(), _scale);
             transformChanged = true;
         }
 

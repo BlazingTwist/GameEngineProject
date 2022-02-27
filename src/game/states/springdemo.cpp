@@ -64,13 +64,8 @@ namespace gameState {
         sphereVelocity = 0.0f;
 
         auto crateTransform =
-                glm::translate(
-                        glm::scale(
-                                glm::identity<glm::mat4>(),
-                                glm::vec3(4.0f, 0.2f, 1.0f)
-                        ),
-                        glm::vec3(0.0f, -7.0f, 0.0f)
-                );
+                glm::translate(glm::identity<glm::mat4>(), glm::vec3(0.0f, -1.5f, 0.0f))
+                * glm::scale(glm::identity<glm::mat4>(), glm::vec3(4.0f, 0.2f, 1.0f));
         meshRenderer.setTransform(crateID, crateTransform);
     }
 

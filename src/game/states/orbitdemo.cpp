@@ -76,7 +76,7 @@ namespace gameState {
                 components::Mesh(meshRenderer.requestNewMesh(),
                                  sphereInvertedMeshData,
                                  graphics::Texture2DManager::get("textures/SunTexture.png", *sampler),
-                                 graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler)),
+                                 graphics::Texture2DManager::get("textures/Sun_phong.png", *sampler)),
                 components::PhysicsObject(600'000.0, defaultSunVelocity)
         );
     }
