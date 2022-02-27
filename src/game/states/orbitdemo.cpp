@@ -124,8 +124,7 @@ namespace gameState {
 
         sampler = new graphics::Sampler(graphics::Sampler::Filter::LINEAR, graphics::Sampler::Filter::LINEAR,
                                         graphics::Sampler::Filter::LINEAR, graphics::Sampler::Border::MIRROR);
-
-        printControls();
+        
         initializeHotkeys();
         cameraControls.initializeCursorPosition();
         initializeShaders();
@@ -134,6 +133,7 @@ namespace gameState {
         initializeScene();
         bindLighting();
         cameraControls.bindCamera();
+        printControls();
     }
 
     void OrbitDemoState::update(const long long &deltaMicroseconds) {
@@ -175,35 +175,14 @@ namespace gameState {
 
         double deltaSeconds = (double) deltaMicroseconds / 1'000'000.0;
         double deltaSecondsSquared = deltaSeconds * deltaSeconds;
-        entity::EntityRegistry::getInstance().execute(
-                [deltaSeconds, deltaSecondsSquared](const entity::EntityReference *entity2, components::Transform transform2, components::PhysicsObject phys2) {
-                    entity::EntityRegistry::getInstance().execute(
-                            [entity2, transform2, phys2, deltaSeconds, deltaSecondsSquared](const entity::EntityReference *entity,
-                                                                                            components::Transform transform,
-                                                                                            components::PhysicsObject phys) {
-                                if (entity->getReferenceID() == entity2->getReferenceID()) {
-                                    return;
-                                }
-                                static constexpr double gravConstant = 6.6743e-5;
-                                glm::vec3 aToB = transform2.getPosition() - transform.getPosition();
-                                glm::vec3 aToBNormal = glm::normalize(aToB);
-                                float distanceSquared = glm::dot(aToB, aToB);
-                                double acceleration = gravConstant * phys2._mass / distanceSquared;
-                                double velocityGain = acceleration * deltaSeconds;
-                                double accelerationDistance = acceleration * deltaSecondsSquared / 2;
-                                transform.setPosition(
-                                        transform.getPosition() + (phys._velocity * (float) deltaSeconds) + (aToBNormal * (float) accelerationDistance));
-                                phys._velocity = phys._velocity + (aToBNormal * (float) velocityGain);
-                                entity::EntityRegistry::getInstance().addOrSetComponent(entity, transform);
-                                entity::EntityRegistry::getInstance().addOrSetComponent(entity, phys);
-                            });
-                });
+        entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
+        registry.execute(components::PhysicsObject::CrossObjectGravitySystem(registry, deltaSeconds, deltaSecondsSquared));
 
         components::Transform sunPosition = entity::EntityRegistry::getInstance().getComponentData<components::Transform>(sunEntity).value();
         lightData.light_position = sunPosition.getPosition();
         bindLighting();
     }
-
+    
     void OrbitDemoState::draw(const long long &deltaMicroseconds) {
         auto &registry = entity::EntityRegistry::getInstance();
         registry.execute([this, &registry](const entity::EntityReference *entity, components::Mesh mesh, components::Transform transform) {
@@ -222,12 +201,12 @@ namespace gameState {
     }
 
     void OrbitDemoState::onResume() {
-        printControls();
         initializeHotkeys();
         cameraControls.initializeCursorPosition();
         loadShaders();
         bindLighting();
         cameraControls.bindCamera();
+        printControls();
     }
 
     void OrbitDemoState::onPause() {

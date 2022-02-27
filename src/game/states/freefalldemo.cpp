@@ -178,7 +178,7 @@ namespace gameState {
     }
     
 
-    void OrbitDemoState::draw(const long long& deltaMicroseconds) {
+    void FreeFallDemoState::draw(const long long& deltaMicroseconds) {
         auto& registry = entity::EntityRegistry::getInstance();
         registry.execute([this, &registry](const entity::EntityReference* entity, components::Mesh mesh, components::Transform transform) {
             bool meshChanged = mesh.hasAnyChanges();
@@ -199,7 +199,7 @@ namespace gameState {
         initializeHotkeys();
         loadShaders();
         bindLighting();
-        bindCamera();
+        cameraControls.bindCamera();
     }
 
     void FreeFallDemoState::onPause() {

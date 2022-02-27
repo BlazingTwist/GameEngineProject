@@ -43,10 +43,6 @@ namespace gameState {
         glm::vec3 ambientLightData;
         graphics::LightData lightData;
       
-
-        graphics::Mesh sphereMesh;
-
-        
         entity::EntityReference* planetEntity = nullptr;
         unsigned int mainSphereID;
         unsigned int transitionSphereID;
@@ -71,8 +67,6 @@ namespace gameState {
         void initializeScene();
 
         void bindLighting();
-        
-        void bindCamera();
         
         void updateSpherePosition();
         void onExit();
