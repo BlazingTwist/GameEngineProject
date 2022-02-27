@@ -28,8 +28,7 @@ namespace entity {
 
     private:
         template<typename T, typename ...T_Args>
-        void prepareComponents(const int entityRefID,
-                               std::unordered_map<std::type_index, int> &componentMap, T const &firstComponent, T_Args const &...otherComps) {
+        void prepareComponents(int entityRefID, std::unordered_map<std::type_index, int> &componentMap, T const &firstComponent, T_Args const &...otherComps) {
             auto typeIndex = std::type_index(typeid(T));
             ComponentRegistry *componentRegistry = ComponentRegistry::getInstance(typeIndex);
             int componentReference = componentRegistry->addComponent(entityRefID, firstComponent);
@@ -112,21 +111,48 @@ namespace entity {
          * @param component Component-data to set
          */
         template<typename T_component>
-        void addOrSetComponent(const EntityReference *reference, T_component component) {
+        void addOrSetComponent(const EntityReference *reference, const T_component &component) {
             if (reference->isExpired()) {
                 return;
             }
             auto typeIndex = std::type_index(typeid(T_component));
+            _addOrSetComponent(ComponentRegistry::getInstance(typeIndex), typeIndex, reference, component);
+        }
+
+        template<typename T_component>
+        void addOrSetComponent(ComponentRegistry *componentRegistry, const EntityReference *reference, const T_component &component) {
+            if (reference->isExpired()) {
+                return;
+            }
+            auto typeIndex = std::type_index(typeid(T_component));
+            _addOrSetComponent(componentRegistry, typeIndex, reference, component);
+        }
+
+        template<typename T_component>
+        void addOrSetComponent(ComponentRegistry *componentRegistry, const std::type_index &typeIndex,
+                               const EntityReference *reference, const T_component &component) {
+            if (reference->isExpired()) {
+                return;
+            }
+            _addOrSetComponent(componentRegistry, typeIndex, reference, component);
+        }
+
+    private:
+        template<typename T_component>
+        void _addOrSetComponent(ComponentRegistry *componentRegistry, const std::type_index &typeIndex,
+                                const EntityReference *reference, const T_component &component) {
             int entityRefID = reference->getReferenceID();
             auto &componentMap = entities[entityRefID].second.componentMap;
-            if (componentMap.find(typeIndex) == componentMap.end()) {
-                int componentReference = ComponentRegistry::getInstance(typeIndex)->template addComponent<T_component>(entityRefID, component);
+            auto findResult = componentMap.find(typeIndex);
+            if (findResult == componentMap.end()) {
+                int componentReference = componentRegistry->template addComponent<T_component>(entityRefID, component);
                 componentMap[typeIndex] = componentReference;
             } else {
-                int componentID = componentMap[typeIndex];
-                ComponentRegistry::getInstance(typeIndex)->template setComponentData<T_component>(componentID, component);
+                componentRegistry->template setComponentData<T_component>(findResult->second, component);
             }
         }
+
+    public:
 
         /**
          * Remove a component from an existing entity.
@@ -223,8 +249,10 @@ namespace entity {
                 utils::gatherTypeIDs<Arg1, Args...>(typeIndices);
             }
 
-            assert(!typeIndices.empty() && "specified Action takes no parameters!");
-            assert(typeIndices.size() == ComponentCount && "failed to deduce Component-Types for Action!");
+            ASSERT(!typeIndices.empty(), "specified Action takes no parameters!");
+            ASSERT(typeIndices.size() == ComponentCount, "failed to deduce Component-Types for Action!");
+
+            // TODO find component with lowest proportion -> only consider entities contained in that component-Registry
 
             for (const auto &entityDataPair: entities) {
                 if (!entityDataPair.second.containsAllComponents(typeIndices)) {
@@ -260,7 +288,6 @@ namespace entity {
         std::vector<EntityDataPair> entities = {};
 
     };
-
 }
 
 #endif //ACAENGINE_ENTITYREGISTRY_H
