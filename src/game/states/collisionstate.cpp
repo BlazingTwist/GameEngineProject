@@ -38,9 +38,11 @@ namespace gameState {
 
     void CollisionState::initializeShaders() {
         graphics::Shader::Handle fragmentShader = graphics::ShaderManager::get("shader/demo.frag", graphics::ShaderType::FRAGMENT);
+        graphics::Shader::Handle geometryShader = graphics::ShaderManager::get("shader/demo.geom", graphics::ShaderType::GEOMETRY);
         graphics::Shader::Handle vertexShader = graphics::ShaderManager::get("shader/demo.vert", graphics::ShaderType::VERTEX);
 
         program.attach(vertexShader);
+        program.attach(geometryShader);
         program.attach(fragmentShader);
         program.link();
     }
