@@ -54,8 +54,8 @@ namespace gameState {
                                       defaultPlanetScale),
                 components::Mesh(meshRenderer.requestNewMesh(),
                                  utils::MeshLoader::get("models/sphere.obj"),
-                                 graphics::Texture2DManager::get("textures/planet1.png", *sampler),
-                                 graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler)),
+                                 graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
+                                 graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())),
                 components::PhysicsObject(150'000.0, defaultPlanetVelocity)
         );
 
@@ -75,8 +75,8 @@ namespace gameState {
                                       defaultSunScale),
                 components::Mesh(meshRenderer.requestNewMesh(),
                                  sphereInvertedMeshData,
-                                 graphics::Texture2DManager::get("textures/SunTexture.png", *sampler),
-                                 graphics::Texture2DManager::get("textures/Sun_phong.png", *sampler)),
+                                 graphics::Texture2DManager::get("textures/SunTexture.png", *graphics::Sampler::getLinearMirroredSampler()),
+                                 graphics::Texture2DManager::get("textures/Sun_phong.png", *graphics::Sampler::getLinearMirroredSampler())),
                 components::PhysicsObject(600'000.0, defaultSunVelocity)
         );
     }
@@ -121,9 +121,6 @@ namespace gameState {
                     defaultLightIntensity
             )),
             meshRenderer(graphics::MeshRenderer()) {
-
-        sampler = new graphics::Sampler(graphics::Sampler::Filter::LINEAR, graphics::Sampler::Filter::LINEAR,
-                                        graphics::Sampler::Filter::LINEAR, graphics::Sampler::Border::MIRROR);
         
         initializeHotkeys();
         cameraControls.initializeCursorPosition();
@@ -218,11 +215,11 @@ namespace gameState {
 
         entity::EntityRegistry::getInstance().eraseEntity(planetEntity);
         entity::EntityRegistry::getInstance().eraseEntity(sunEntity);
+        meshRenderer.clear();
         delete planetEntity;
         delete sunEntity;
 
         delete sphereInvertedMeshData;
-        delete sampler;
 
         _isFinished = true;
     }

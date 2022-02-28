@@ -5,6 +5,13 @@ namespace graphics {
 	/// A sampler defines how a texture is sampled (border handling and scaling)
 	class Sampler
 	{
+    public:
+        static graphics::Sampler *getLinearMirroredSampler() {
+            static auto *sampler = new graphics::Sampler(graphics::Sampler::Filter::LINEAR, graphics::Sampler::Filter::LINEAR,
+                                                                 graphics::Sampler::Filter::LINEAR, graphics::Sampler::Border::MIRROR);
+            return sampler;
+        }
+        
 	public:
 		enum class Filter
 		{

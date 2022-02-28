@@ -42,7 +42,6 @@ namespace gameState {
         graphics::MeshRenderer meshRenderer;
 
         utils::MeshData *sphereInvertedMeshData = nullptr;
-        graphics::Sampler *sampler = nullptr;
 
         entity::EntityReference* planetEntity = nullptr;
         entity::EntityReference* sunEntity = nullptr;

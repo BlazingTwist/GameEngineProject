@@ -16,6 +16,7 @@ namespace components {
         static constexpr int meshStateIndex = 0;
         static constexpr int textureStateIndex = 1;
         static constexpr int phongStateIndex = 2;
+        static constexpr int heightStateIndex = 3;
 
     public:
         Mesh() : _rendererID(0) {};
@@ -23,11 +24,13 @@ namespace components {
         Mesh(const unsigned int rendererId,
              const utils::MeshData *meshData,
              const graphics::Texture2D *textureData = nullptr,
-             const graphics::Texture2D *phongData = nullptr) :
+             const graphics::Texture2D *phongData = nullptr,
+             const graphics::Texture2D *heightData = nullptr) :
                 _rendererID(rendererId),
                 _meshData(meshData),
                 _textureData(textureData),
-                _phongData(phongData) {
+                _phongData(phongData),
+                _heightData(heightData) {
 
             _stateChanges |= 0b1 << meshStateIndex;
             if (textureData != nullptr) {
@@ -35,6 +38,9 @@ namespace components {
             }
             if (phongData != nullptr) {
                 _stateChanges |= 0b1 << phongStateIndex;
+            }
+            if (heightData != nullptr) {
+                _stateChanges |= 0b1 << heightStateIndex;
             }
         }
 
@@ -69,6 +75,15 @@ namespace components {
             _stateChanges |= 0b1 << phongStateIndex;
         }
 
+        [[nodiscard]] const graphics::Texture2D *getHeightData() const {
+            return _heightData;
+        }
+
+        void setHeightData(const graphics::Texture2D *heightData) {
+            Mesh::_heightData = heightData;
+            _stateChanges |= 0b1 << heightStateIndex;
+        }
+
         [[nodiscard]] bool meshHasChanged() const {
             return (_stateChanges & (0b1 << meshStateIndex)) != 0;
         }
@@ -93,6 +108,14 @@ namespace components {
             _stateChanges &= ~(0b1 << phongStateIndex);
         }
 
+        [[nodiscard]] bool heightHasChanged() const {
+            return (_stateChanges & (0b1 << heightStateIndex)) != 0;
+        }
+
+        void heightChangesHandled() {
+            _stateChanges &= ~(0b1 << heightStateIndex);
+        }
+
         [[nodiscard]] bool hasAnyChanges() const {
             return _stateChanges != 0;
         }
@@ -103,6 +126,7 @@ namespace components {
         utils::MeshData::Handle _meshData = nullptr;
         graphics::Texture2D::Handle _textureData = nullptr;
         graphics::Texture2D::Handle _phongData = nullptr;
+        graphics::Texture2D::Handle _heightData = nullptr;
 
         int _stateChanges = 0;
     };

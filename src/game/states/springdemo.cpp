@@ -1,7 +1,6 @@
 ﻿#include "springdemo.h"
 
 namespace gameState {
-    static graphics::Sampler *sampler;
     static constexpr auto defaultLightPosition = glm::vec3(0.0f, 0.0f, -3.0f);
     static constexpr auto defaultLightDirection = glm::vec3(0.0f, 0.0f, 1.0f);
     static constexpr auto defaultLightSpotAngle = 25.0f;
@@ -43,12 +42,12 @@ namespace gameState {
     void SpringDemoState::loadGeometry() {
         meshRenderer.clear();
         planetID = meshRenderer.draw(sphereMesh,
-                                     graphics::Texture2DManager::get("textures/planet1.png", *sampler),
-                                     graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler),
+                                     graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
+                                     graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler()),
                                      glm::translate(glm::identity<glm::mat4>(), glm::vec3(0.0f, 0.0f, 0.0f)));
         crateID = meshRenderer.draw(crateMesh,
-                                    graphics::Texture2DManager::get("textures/cratetex.png", *sampler),
-                                    graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler),
+                                    graphics::Texture2DManager::get("textures/cratetex.png", *graphics::Sampler::getLinearMirroredSampler()),
+                                    graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler()),
                                     glm::translate(glm::identity<glm::mat4>(), glm::vec3(0.0f, 0.0f, 0.0f)));
     }
 
@@ -88,9 +87,6 @@ namespace gameState {
             meshRenderer(graphics::MeshRenderer()),
             sphereMesh(graphics::Mesh(utils::MeshLoader::get("models/sphere.obj"))),
             crateMesh(graphics::Mesh(utils::MeshLoader::get("models/crate.obj"))) {
-
-        sampler = new graphics::Sampler(graphics::Sampler::Filter::LINEAR, graphics::Sampler::Filter::LINEAR,
-                                        graphics::Sampler::Filter::LINEAR, graphics::Sampler::Border::MIRROR);
 
         printControls();
         initializeHotkeys();

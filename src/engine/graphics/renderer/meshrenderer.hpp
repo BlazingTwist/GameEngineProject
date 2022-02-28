@@ -8,6 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "engine/components/mesh.h"
 #include "engine/components/transform.h"
+#include <engine/graphics/resources.hpp>
 
 namespace graphics {
 
@@ -37,9 +38,23 @@ namespace graphics {
         GLint glsl_object_to_world_matrix = 0;
 
         struct MeshRenderData {
+            MeshRenderData(Mesh *meshData, const Texture2D *textureData, const Texture2D *phongData, const Texture2D *heightData, const glm::mat4 &transform)
+                    : meshData(meshData),
+                      textureData(textureData == nullptr
+                                  ? graphics::Texture2DManager::get("textures/fallback/texture.png", *graphics::Sampler::getLinearMirroredSampler())
+                                  : textureData),
+                      phongData(phongData == nullptr
+                                ? graphics::Texture2DManager::get("textures/fallback/phong.png", *graphics::Sampler::getLinearMirroredSampler())
+                                : phongData),
+                      heightData(heightData == nullptr
+                                 ? graphics::Texture2DManager::get("textures/fallback/heightmap.png", *graphics::Sampler::getLinearMirroredSampler())
+                                 : heightData),
+                      transform(transform) {}
+
             Mesh *meshData = nullptr;
             Texture2D::Handle textureData = nullptr;
             Texture2D::Handle phongData = nullptr;
+            Texture2D::Handle heightData = nullptr;
             glm::mat4 transform = glm::identity<glm::mat4>();
 
             ~MeshRenderData() {
@@ -48,6 +63,5 @@ namespace graphics {
         };
 
         std::vector<MeshRenderData *> meshBuffer = {};
-
     };
 }

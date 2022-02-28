@@ -10,6 +10,7 @@ layout(location = 2) in vec3 render_position_frag;
 
 layout(binding = 0) uniform sampler2D tx_color;
 layout(binding = 1) uniform sampler2D tx_phong;// stores ambient/diffuse/specular/shinyness weights in r/g/b/a respectively
+layout(binding = 2) uniform sampler2D tx_height; // stores height in range [0,1], 1 being on the surface, 0 being the maximum depth into the surface
 
 layout(location = 0) out vec4 out_color;
 
