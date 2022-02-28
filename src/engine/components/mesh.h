@@ -16,7 +16,8 @@ namespace components {
         static constexpr int meshStateIndex = 0;
         static constexpr int textureStateIndex = 1;
         static constexpr int phongStateIndex = 2;
-        static constexpr int heightStateIndex = 3;
+        static constexpr int normalStateIndex = 3;
+        static constexpr int heightStateIndex = 4;
 
     public:
         Mesh() : _rendererID(0) {};
@@ -25,11 +26,13 @@ namespace components {
              const utils::MeshData *meshData,
              const graphics::Texture2D *textureData = nullptr,
              const graphics::Texture2D *phongData = nullptr,
+             const graphics::Texture2D *normalData = nullptr,
              const graphics::Texture2D *heightData = nullptr) :
                 _rendererID(rendererId),
                 _meshData(meshData),
                 _textureData(textureData),
                 _phongData(phongData),
+                _normalData(normalData),
                 _heightData(heightData) {
 
             _stateChanges |= 0b1 << meshStateIndex;
@@ -38,6 +41,9 @@ namespace components {
             }
             if (phongData != nullptr) {
                 _stateChanges |= 0b1 << phongStateIndex;
+            }
+            if (normalData != nullptr) {
+                _stateChanges |= 0b1 << normalStateIndex;
             }
             if (heightData != nullptr) {
                 _stateChanges |= 0b1 << heightStateIndex;
@@ -75,6 +81,15 @@ namespace components {
             _stateChanges |= 0b1 << phongStateIndex;
         }
 
+        [[nodiscard]] const graphics::Texture2D *getNormalData() const {
+            return _normalData;
+        }
+
+        void setNormalData(const graphics::Texture2D *normalData) {
+            Mesh::_normalData = normalData;
+            _stateChanges |= 0b1 << normalStateIndex;
+        }
+
         [[nodiscard]] const graphics::Texture2D *getHeightData() const {
             return _heightData;
         }
@@ -108,6 +123,14 @@ namespace components {
             _stateChanges &= ~(0b1 << phongStateIndex);
         }
 
+        [[nodiscard]] bool normalHasChanged() const {
+            return (_stateChanges & (0b1 << normalStateIndex)) != 0;
+        }
+
+        void normalChangesHandled() {
+            _stateChanges &= ~(0b1 << normalStateIndex);
+        }
+
         [[nodiscard]] bool heightHasChanged() const {
             return (_stateChanges & (0b1 << heightStateIndex)) != 0;
         }
@@ -126,6 +149,7 @@ namespace components {
         utils::MeshData::Handle _meshData = nullptr;
         graphics::Texture2D::Handle _textureData = nullptr;
         graphics::Texture2D::Handle _phongData = nullptr;
+        graphics::Texture2D::Handle _normalData = nullptr;
         graphics::Texture2D::Handle _heightData = nullptr;
 
         int _stateChanges = 0;

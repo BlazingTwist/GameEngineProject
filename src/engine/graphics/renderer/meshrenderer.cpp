@@ -10,11 +10,12 @@ namespace graphics {
     void MeshRenderer::draw(components::Mesh &_mesh, components::Transform &_transform) {
         MeshRenderData *data = meshBuffer[_mesh.getRendererId()];
         if (data == nullptr) {
-            data = new MeshRenderData(new Mesh(_mesh.getMeshData()), _mesh.getTextureData(), _mesh.getPhongData(), _mesh.getHeightData(),
-                                      _transform.getTransformMatrix());
+            data = new MeshRenderData(new Mesh(_mesh.getMeshData()), _mesh.getTextureData(), _mesh.getPhongData(), _mesh.getNormalData(),
+                                      _mesh.getHeightData(), _transform.getTransformMatrix());
             _mesh.meshChangesHandled();
             _mesh.textureChangesHandled();
             _mesh.phongChangesHandled();
+            _mesh.normalChangesHandled();
             _mesh.heightChangesHandled();
             _transform.onChangesHandled();
             meshBuffer[_mesh.getRendererId()] = data;
@@ -34,15 +35,19 @@ namespace graphics {
                 _mesh.meshChangesHandled();
             }
             if (_mesh.textureHasChanged()) {
-                data->textureData = _mesh.getTextureData();
+                data->setTextureData(_mesh.getTextureData());
                 _mesh.textureChangesHandled();
             }
             if (_mesh.phongHasChanged()) {
-                data->phongData = _mesh.getPhongData();
+                data->setPhongData(_mesh.getPhongData());
                 _mesh.phongChangesHandled();
             }
+            if (_mesh.normalHasChanged()) {
+                data->setNormalData(_mesh.getNormalData());
+                _mesh.normalChangesHandled();
+            }
             if (_mesh.heightHasChanged()) {
-                data->heightData = _mesh.getHeightData();
+                data->setHeightData(_mesh.getHeightData());
                 _mesh.heightChangesHandled();
             }
         }
@@ -53,13 +58,7 @@ namespace graphics {
     }
 
     unsigned int MeshRenderer::draw(Mesh &_mesh, Texture2D::Handle _texture, Texture2D::Handle _phongData, const glm::mat4 &_transform) {
-        auto *renderData = new MeshRenderData(
-                &_mesh,
-                _texture,
-                _phongData,
-                nullptr,
-                _transform
-        );
+        auto *renderData = new MeshRenderData(&_mesh, _texture, _phongData, nullptr, nullptr, _transform);
         meshBuffer.push_back(renderData);
         return meshBuffer.size() - 1;
     }
@@ -94,7 +93,8 @@ namespace graphics {
             }
             meshRenderData->textureData->bind(0);
             meshRenderData->phongData->bind(1);
-            meshRenderData->heightData->bind(2);
+            meshRenderData->normalData->bind(2);
+            meshRenderData->heightData->bind(3);
             glUniformMatrix4fv(glsl_object_to_world_matrix, 1, false, glm::value_ptr(meshRenderData->transform));
             meshRenderData->meshData->getGeometryBuffer()->draw();
         }
