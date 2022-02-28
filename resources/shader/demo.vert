@@ -7,7 +7,7 @@ layout(location = 2) in vec3 normal_vec;
 out vertexData{
     vec2 uv_coord;
     vec3 normal_vec;
-    vec3 render_position;
+    vec3 world_position;
 }vertex;
 
 uniform mat4 object_to_world_matrix;
@@ -19,6 +19,6 @@ void main()
     gl_Position = world_to_camera_matrix * worldPosition;
 
     vertex.uv_coord = uv_coord;
-    vertex.normal_vec = normal_vec;
-    vertex.render_position = worldPosition.xyz;
+    vertex.normal_vec = normalize(vec3(object_to_world_matrix * vec4(normal_vec, 1.0f)));
+    vertex.world_position = worldPosition.xyz;
 }

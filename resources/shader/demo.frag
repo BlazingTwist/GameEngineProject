@@ -6,7 +6,7 @@
 
 in fragmentData{
     vec2 uv_coord;
-    vec3 render_position;
+    vec3 world_position;
     mat3 tbn_matrix;
 }fragment;
 
@@ -31,9 +31,45 @@ uniform float light_intensity;
 
 void main()
 {
-    vec4 texColor = texture(tx_color, fragment.uv_coord);
-    vec4 phongData = texture(tx_phong, fragment.uv_coord);
-    vec3 normal_vec = normalize(fragment.tbn_matrix * (texture(tx_normal, fragment.uv_coord).xyz * 2.0f - 1.0f));
+    vec3 vec_to_eye_normalized = normalize(camera_position - fragment.world_position);
+
+    // quality setting for heightMap // should we turn this into a uniform rather than hard-coding?
+    float height_map_scale = 0.05f;
+    float minLayers = 8.0f;
+    float maxLayers = 64.0f;
+    // test more layers for shallower view angles
+    float normal_dot_vecToEye = dot(fragment.tbn_matrix[2], vec_to_eye_normalized);
+    float numLayers = mix(maxLayers, minLayers, abs(normal_dot_vecToEye));
+    float layerHeightStep = 1.0f / numLayers;
+    vec3 tangent_view_vec = normalize(transpose(fragment.tbn_matrix) * -vec_to_eye_normalized);
+
+    // calculate shifted UV coordinates using parallax occlusion mapping
+    vec2 tangent_step_uv = tangent_view_vec.xy * height_map_scale / numLayers;
+    float currentLayerHeight = 1.0f;
+    vec2 currentUV = fragment.uv_coord;
+    float currentHeightMapValue = texture(tx_height, currentUV).r;
+    float previousHeightMapValue = currentHeightMapValue;
+
+    // loop until tested layer is beneath (approximated) heightMap curve
+    while (currentLayerHeight > currentHeightMapValue){
+        currentUV += tangent_step_uv;
+        previousHeightMapValue = currentHeightMapValue;
+        currentHeightMapValue = texture(tx_height, currentUV).r;
+        currentLayerHeight -= layerHeightStep;
+    }
+
+    float heightMapSampleWeight = (currentLayerHeight - currentHeightMapValue) / (previousHeightMapValue - currentHeightMapValue - layerHeightStep);
+    currentUV = currentUV - (heightMapSampleWeight * tangent_step_uv);
+
+    // discard UVs that are outside of the uv map
+    if (currentUV.x > 1.0f || currentUV.x < 0.0f || currentUV.y > 1.0f || currentUV.y < 0.0f){
+        discard;
+    }
+
+    // apply shifted UV coordinates to textures
+    vec4 texColor = texture(tx_color, currentUV);
+    vec4 phongData = texture(tx_phong, currentUV);
+    vec3 normal_vec = normalize(fragment.tbn_matrix * (texture(tx_normal, currentUV).xyz * 2.0f - 1.0f));
     vec3 ambientColor = max(phongData.r * ambient_light, 0.0f);
     vec3 diffuseColor = vec3(0.0f, 0.0f, 0.0f);
     vec3 specularColor = vec3(0.0f, 0.0f, 0.0f);
@@ -44,20 +80,20 @@ void main()
         // direction, color, intensity
 
         float diffuseDot = max(dot(-light_direction, normal_vec), 0.0f);
-        float specularDot = max(dot(reflect(light_direction, normal_vec), normalize(camera_position - fragment.render_position)), 0.0f);
+        float specularDot = max(dot(reflect(light_direction, normal_vec), vec_to_eye_normalized), 0.0f);
         diffuseColor = phongData.g * diffuseDot * light_color * light_intensity;
         specularColor = phongData.b * 8 * pow(specularDot, phongData.a * 255) * light_color * light_intensity;
 
     } else if (light_type == LIGHT_TYPE_SPOT){
         // position, direction, range, spot_angle, color, intensity
-        vec3 spotLightDirection = normalize(fragment.render_position - light_position);
+        vec3 spotLightDirection = normalize(fragment.world_position - light_position);
         // here we're (ab-)using the fact that the dot product of two normalized vectors is the cosine of their angle
-        float spotLightAngle = dot(light_direction, spotLightDirection); 
-        float spotLightDistance = length(fragment.render_position - light_position);
+        float spotLightAngle = dot(light_direction, spotLightDirection);
+        float spotLightDistance = length(fragment.world_position - light_position);
         if (spotLightAngle > light_spot_angle && spotLightDistance <= light_range){
-            float distanceFactor = min(0.01f / pow(spotLightDistance / light_range, 2), 4); // 4 is the distanceFactor at 'distance = 0.05 * range'
+            float distanceFactor = min(0.01f / pow(spotLightDistance / light_range, 2), 4);// 4 is the distanceFactor at 'distance = 0.05 * range'
             float diffuseDot = max(dot(-spotLightDirection, normal_vec), 0.0f);
-            float specularDot = max(dot(reflect(spotLightDirection, normal_vec), normalize(camera_position - fragment.render_position)), 0.0f);
+            float specularDot = max(dot(reflect(spotLightDirection, normal_vec), vec_to_eye_normalized), 0.0f);
             diffuseColor = phongData.g * diffuseDot * light_color * light_intensity * distanceFactor;
             specularColor = phongData.b * 8 * pow(specularDot, phongData.a * 255) * light_color * light_intensity * distanceFactor;
         }
@@ -65,12 +101,12 @@ void main()
     } else if (light_type == LIGHT_TYPE_POINT){
         // position, range, color, intensity
         // light intensity should diminish proportionally to `1 / distance_squared`
-        vec3 pointLightDirection = normalize(fragment.render_position - light_position);
-        float pointLightDistance = length(fragment.render_position - light_position);
+        vec3 pointLightDirection = normalize(fragment.world_position - light_position);
+        float pointLightDistance = length(fragment.world_position - light_position);
         if (pointLightDistance <= light_range){
-            float distanceFactor = min(0.01f / pow(pointLightDistance / light_range, 2), 4); // 4 is the distanceFactor at 'distance = 0.05 * range'
+            float distanceFactor = min(0.01f / pow(pointLightDistance / light_range, 2), 4);// 4 is the distanceFactor at 'distance = 0.05 * range'
             float diffuseDot = max(dot(-pointLightDirection, normal_vec), 0.0f);
-            float specularDot = max(dot(reflect(pointLightDirection, normal_vec), normalize(camera_position - fragment.render_position)), 0.0f);
+            float specularDot = max(dot(reflect(pointLightDirection, normal_vec), vec_to_eye_normalized), 0.0f);
             diffuseColor = phongData.g * diffuseDot * light_color * light_intensity * distanceFactor;
             specularColor = phongData.b * 8 * pow(specularDot, phongData.a * 255) * light_color * light_intensity * distanceFactor;
         }
