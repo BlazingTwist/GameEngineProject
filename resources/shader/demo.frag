@@ -6,8 +6,8 @@
 
 in fragmentData{
     vec2 uv_coord;
-    vec3 normal_vec;
     vec3 render_position;
+    mat3 tbn_matrix;
 }fragment;
 
 layout(binding = 0) uniform sampler2D tx_color;
@@ -33,7 +33,7 @@ void main()
 {
     vec4 texColor = texture(tx_color, fragment.uv_coord);
     vec4 phongData = texture(tx_phong, fragment.uv_coord);
-    vec3 normal_vec = normalize(texture(tx_normal, fragment.uv_coord).xyz * 2.0f - 1.0f);
+    vec3 normal_vec = normalize(fragment.tbn_matrix * (texture(tx_normal, fragment.uv_coord).xyz * 2.0f - 1.0f));
     vec3 ambientColor = max(phongData.r * ambient_light, 0.0f);
     vec3 diffuseColor = vec3(0.0f, 0.0f, 0.0f);
     vec3 specularColor = vec3(0.0f, 0.0f, 0.0f);
