@@ -32,7 +32,13 @@ set_target_properties(test_registry PROPERTIES
 target_link_libraries(test_registry PRIVATE AcaEngine)
 add_test(registry test_registry)
 
-
+add_executable(benchmark_registry registry/benchmark_registry.cpp)
+set_target_properties(benchmark_registry PROPERTIES
+		CXX_STANDARD 20
+		CXX_STANDARD_REQUIRED YES
+)
+target_link_libraries(benchmark_registry PRIVATE AcaEngine)
+add_test(registry_bench benchmark_registry)
 
 
 

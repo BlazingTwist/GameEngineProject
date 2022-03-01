@@ -2,59 +2,65 @@
 
 namespace graphics {
 
-    static graphics::GeometryBuffer *createStripBuffer(const graphics::VertexAttribute *vertexAttribute, int numAttributes) {
-        auto *buffer = new graphics::GeometryBuffer(
-                graphics::GLPrimitiveType::TRIANGLE_STRIPE,
-                vertexAttribute,
-                numAttributes,
-                0
-        );
-        return buffer;
-    }
-
-    static graphics::GeometryBuffer *createTriangleBuffer(const graphics::VertexAttribute *vertexAttribute, int numAttributes) {
-        auto *buffer = new graphics::GeometryBuffer(
-                graphics::GLPrimitiveType::TRIANGLES,
-                vertexAttribute,
-                numAttributes,
-                0
-        );
-        return buffer;
-    }
-
     Mesh::Mesh(const utils::MeshData::Handle &_meshData) {
-        utils::MeshStripData::Handle meshStripData = utils::MeshStripData::createFromMeshData(_meshData);
-        graphics::GeometryBuffer *triBuffer = createTriangleBuffer(VERTEX_ATTRIBUTES.data(), VERTEX_ATTRIBUTES.size());
-        auto *triBufferData = new VertexData[meshStripData->floatingTriangles.size() * 3];
-        int dataIndex = 0;
-        for (const auto &floatingTriangle: meshStripData->floatingTriangles) {
-            for (int i = 0; i < 3; i++) {
-                triBufferData[dataIndex + i] = {
-                        _meshData->positions[floatingTriangle.indices[i].positionIdx],
-                        _meshData->textureCoordinates[floatingTriangle.indices[i].textureCoordinateIdx.value_or(0)],
-                        _meshData->normals[floatingTriangle.indices[i].normalIdx.value_or(0)]
-                };
-            }
-            dataIndex += 3;
-        }
-        triBuffer->setData(triBufferData, sizeof(VertexData) * meshStripData->floatingTriangles.size() * 3);
-        buffers.push_back(triBuffer);
+        std::vector<const utils::MeshData::FaceData::VertexIndices *> uniqueVertices = {};
 
-        for (const auto &strip: meshStripData->triangleStrips) {
-            auto *stripBuffer = createStripBuffer(VERTEX_ATTRIBUTES.data(), VERTEX_ATTRIBUTES.size());
-            unsigned int vertexCount = strip.vertexIndices.size();
-            auto *stripBufferData = new VertexData[vertexCount];
-            dataIndex = 0;
-            for (const auto &vertexIndex: strip.vertexIndices) {
-                stripBufferData[dataIndex] = {
-                        _meshData->positions[vertexIndex.positionIdx],
-                        _meshData->textureCoordinates[vertexIndex.textureCoordinateIdx.value_or(0)],
-                        _meshData->normals[vertexIndex.normalIdx.value_or(0)]
-                };
-                dataIndex++;
+        const int vertexCount = static_cast<int>(_meshData->faces.size()) * 3;
+        auto *vertexIndices = new int[vertexCount];
+        int vertexIndicesIndex = 0;
+        for (const auto &face: _meshData->faces) {
+            for (const auto &vertex: face.indices) {
+                int uniqueIndex = -1;
+                for (unsigned int i = 0; i < uniqueVertices.size(); ++i) {
+                    if ((*uniqueVertices[i]) == vertex) {
+                        uniqueIndex = static_cast<int>(i);
+                        break;
+                    }
+                }
+                if (uniqueIndex < 0) {
+                    uniqueIndex = static_cast<int>(uniqueVertices.size());
+                    uniqueVertices.push_back(&vertex);
+                }
+                vertexIndices[vertexIndicesIndex] = uniqueIndex;
+                vertexIndicesIndex++;
             }
-            stripBuffer->setData(stripBufferData, sizeof(VertexData) * vertexCount);
-            buffers.push_back(stripBuffer);
         }
+
+        const unsigned int uniqueVertexCount = uniqueVertices.size();
+        auto *vertexBuffer = new graphics::VertexData[uniqueVertexCount];
+        for (unsigned int i = 0; i < uniqueVertexCount; i++) {
+            const utils::MeshData::FaceData::VertexIndices *uniqueVertex = uniqueVertices[i];
+            graphics::VertexData data = graphics::VertexData();
+            data.positionData = _meshData->positions[uniqueVertex->positionIdx];
+
+            std::optional<int> uvIndex = uniqueVertex->textureCoordinateIdx;
+            if (uvIndex.has_value()) {
+                data.uvData = _meshData->textureCoordinates[uvIndex.value()];
+            } else {
+                data.uvData = glm::vec2();
+            }
+
+            std::optional<int> normalIndex = uniqueVertex->normalIdx;
+            if (normalIndex.has_value()) {
+                data.normalData = _meshData->normals[normalIndex.value()];
+            } else {
+                data.normalData = glm::vec3();
+            }
+
+            vertexBuffer[i] = data;
+        }
+
+        currentBuffer = new graphics::GeometryBuffer(
+                graphics::GLPrimitiveType::TRIANGLES,
+                VERTEX_ATTRIBUTES.data(),
+                VERTEX_ATTRIBUTES.size(),
+                sizeof(int),
+                vertexCount * sizeof(int)
+        );
+        currentBuffer->setIndexData(vertexIndices, vertexCount * sizeof(int));
+        currentBuffer->setData(vertexBuffer, uniqueVertexCount * sizeof(VertexData));
+        delete[] vertexIndices;
+        delete[] vertexBuffer;
+        uniqueVertices.clear();
     }
 }

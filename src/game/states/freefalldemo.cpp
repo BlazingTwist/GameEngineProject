@@ -1,30 +1,24 @@
 ﻿#include "freefalldemo.h"
 
 namespace gameState {
-    static graphics::Sampler *sampler;
-    static constexpr auto defaultSpherePosition = glm::vec3(0.0f, 0.0f, 0.0f);
-    static constexpr auto viewportWidth = 4.0f;
-    static constexpr auto viewportHeight = 4.0f;
-    static constexpr auto viewportPosition = glm::vec2(0.5f, 0.5f);
+    static constexpr auto defaultPlanetVelocity = glm::vec3(0.0f, 0.0f, 0.0f);
 
     static void printControls() {
         spdlog::info("Free Fall Demo Controls:");
-        spdlog::info("- press [1] to reset scene");
-        spdlog::info("- press [2] to start a new MainGameState");
-        spdlog::info("- press [3] to exit this state");
+        spdlog::info("- press [1] to exit this state");
     }
 
     void FreeFallDemoState::initializeHotkeys() {
-        hotkey_reset_isDown = input::InputManager::isKeyPressed(input::Key::Num1);
-        hotkey_mainState_isDown = input::InputManager::isKeyPressed(input::Key::Num2);
-        hotkey_exit_isDown = input::InputManager::isKeyPressed(input::Key::Num3);
+        hotkey_exit_isDown = input::InputManager::isKeyPressed(input::Key::Num1);
     }
 
     void FreeFallDemoState::initializeShaders() {
         graphics::Shader::Handle fragmentShader = graphics::ShaderManager::get("shader/demo.frag", graphics::ShaderType::FRAGMENT);
+        graphics::Shader::Handle geometryShader = graphics::ShaderManager::get("shader/demo.geom", graphics::ShaderType::GEOMETRY);
         graphics::Shader::Handle vertexShader = graphics::ShaderManager::get("shader/demo.vert", graphics::ShaderType::VERTEX);
 
         program.attach(vertexShader);
+        program.attach(geometryShader);
         program.attach(fragmentShader);
         program.link();
     }
@@ -32,102 +26,124 @@ namespace gameState {
     void FreeFallDemoState::loadShaders() {
         program.use();
 
-        worldToCameraMatrixID = glGetUniformLocation(program.getID(), "world_to_camera_matrix");
-        cameraPositionShaderID = glGetUniformLocation(program.getID(), "camera_position");
+        cameraControls.loadShaders(program.getID());
         glsl_ambient_light = glGetUniformLocation(program.getID(), "ambient_light");
     }
 
     void FreeFallDemoState::loadGeometry() {
         meshRenderer.clear();
-        mainSphereID = meshRenderer.draw(sphereMesh,
-                                         graphics::Texture2DManager::get("textures/planet1.png", *sampler),
-                                         graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler),
-                                         glm::translate(glm::identity<glm::mat4>(), glm::vec3(0.0f, 0.0f, 0.0f)));
-        transitionSphereID = meshRenderer.draw(sphereMesh,
-                                               graphics::Texture2DManager::get("textures/planet1.png", *sampler),
-                                               graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler),
-                                               glm::translate(glm::identity<glm::mat4>(), glm::vec3(0.0f, 0.0f, 0.0f)));
-    }
 
-    void FreeFallDemoState::initializeScene() {
-        spherePosition = defaultSpherePosition;
-        updateSpherePosition();
-        sphereVelocity = 0.0f;
+        lightSource = entity::EntityRegistry::getInstance().createEntity(
+                components::Light::directional(
+                        glm::vec3(-1.0f, -1.0f, 0.5f), glm::vec3(1.0f, 1.0f, 0.8f), 0.75f
+                )
+        );
     }
 
     void FreeFallDemoState::bindLighting() {
-        lightData.bindData(program.getID());
         glUniform3fv(glsl_ambient_light, 1, glm::value_ptr(ambientLightData));
+        graphics::LightManager::getInstance().bindLights(4);
     }
 
-    void FreeFallDemoState::bindCamera() {
-        glUniformMatrix4fv(worldToCameraMatrixID, 1, GL_FALSE, glm::value_ptr(camera.getWorldToCamera()));
-        glUniform3fv(cameraPositionShaderID, 1, glm::value_ptr(camera.getPosition()));
-    }
 
     FreeFallDemoState::FreeFallDemoState() :
-            camera(graphics::Camera(glm::vec2(viewportWidth, viewportHeight), viewportPosition, -10.0f, 20.0f)),
-            ambientLightData({0.7f, 0.7f, 0.7f}),
-            lightData(graphics::LightData::directional(
-                    glm::normalize(glm::vec3(-1.0f, -1.0f, 0.0f)),
-                    glm::vec3(1.0f, 1.0f, 1.0f),
-                    2.0f
-            )),
-            meshRenderer(graphics::MeshRenderer()),
-            sphereMesh(graphics::Mesh(utils::MeshLoader::get("models/sphere.obj"))) {
+            cameraControls(graphics::Camera(90.0f, 0.1f, 300.0f), glm::vec3(0.0f, 0.0f, -7.0f), 0.0f, 0.0f, 0.0f),
+            ambientLightData({1.4f, 1.4f, 1.4f}),
+            meshRenderer(graphics::MeshRenderer()) {
 
-        sampler = new graphics::Sampler(graphics::Sampler::Filter::LINEAR, graphics::Sampler::Filter::LINEAR,
-                                        graphics::Sampler::Filter::LINEAR, graphics::Sampler::Border::MIRROR);
-        
-        printControls();
         initializeHotkeys();
+        cameraControls.initializeCursorPosition();
         initializeShaders();
         loadShaders();
         loadGeometry();
-        initializeScene();
+        cameraControls.initializeScene();
         bindLighting();
-        bindCamera();
+        cameraControls.bindCamera();;
+        printControls();
     }
 
-    void FreeFallDemoState::updateSpherePosition() {
-        meshRenderer.setTransform(mainSphereID, glm::translate(glm::identity<glm::mat4>(), spherePosition));
-        meshRenderer.setTransform(transitionSphereID, glm::translate(glm::identity<glm::mat4>(), spherePosition + glm::vec3(0.0f, viewportHeight, 0.0f)));
+    void FreeFallDemoState::createObjects(const double &deltaSeconds) {
+        nextPlanetSpawnSeconds -= deltaSeconds;
+        if (nextPlanetSpawnSeconds <= 0) {
+            nextPlanetSpawnSeconds = 0.25;
+
+
+            std::random_device randomDevice;
+            std::mt19937 gen(randomDevice());
+            std::uniform_real_distribution<> positionDistribution(-4, 4);
+            std::uniform_real_distribution<> scaleDistribution(0.1, 1.5);
+
+            glm::vec3 position = glm::vec3(positionDistribution(gen), 15, positionDistribution(gen));
+            glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f) * static_cast<float>(scaleDistribution(gen));
+
+            entity::EntityReference *planetEntity = entity::EntityRegistry::getInstance().createEntity(
+                    components::Transform(position,
+                                          glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
+                                          scale),
+                    components::Mesh(utils::MeshLoader::get("models/sphere.obj"),
+                                     graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
+                                     graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())),
+                    components::PhysicsObject(150'000.0, defaultPlanetVelocity)
+            );
+
+            meshRenderer.registerMesh(planetEntity);
+            planetVec.push_back(planetEntity);
+        }
     }
+
 
     void FreeFallDemoState::update(const long long &deltaMicroseconds) {
-        if (!hotkey_reset_isDown && input::InputManager::isKeyPressed(input::Key::Num1)) {
-            spdlog::info("resetting scene");
-            initializeScene();
-            bindLighting();
-        }
-
-        if (!hotkey_mainState_isDown && input::InputManager::isKeyPressed(input::Key::Num2)) {
-            spdlog::info("main state hotkey pressed");
-            gameState::GameStateManager::getInstance().startGameState(new gameState::MainGameState());
+        if (!hotkey_exit_isDown && input::InputManager::isKeyPressed(input::Key::Num1)) {
+            onExit();
             return;
         }
-
-        if (!hotkey_exit_isDown && input::InputManager::isKeyPressed(input::Key::Num3)) {
-            spdlog::info("exiting free fall demo state");
-            _isFinished = true;
-            return;
-        }
-
         initializeHotkeys();
-        
-        static constexpr float sphereAcceleration = 1.0f;
+
         double deltaSeconds = (double) deltaMicroseconds / 1'000'000.0;
         double deltaSecondsSquared = deltaSeconds * deltaSeconds;
-        double velocityGain = sphereAcceleration * deltaSeconds;
-        double accelerationDistance = sphereAcceleration * deltaSecondsSquared;
-        double totalDistance = (sphereVelocity * deltaSeconds) + accelerationDistance;
-        spherePosition += glm::vec3(0.0f, -1.0f, 0.0f) * (float) totalDistance;
-        if(spherePosition.y < (-viewportHeight / 2.0f - 1.0f)){
-            spherePosition += glm::vec3 (0.0f, viewportHeight, 0.0f);
+
+        entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
+
+        std::vector<const entity::EntityReference *> outOfBoundsEntities = {};
+        registry.execute([deltaSeconds, deltaSecondsSquared, &outOfBoundsEntities]
+                                 (const entity::EntityReference *entity, components::Transform transform, components::PhysicsObject phys) {
+            static constexpr float gravityAcceleration = 1.0f;
+            double velocityGain = gravityAcceleration * deltaSeconds;
+            double accelerationDistance = gravityAcceleration * deltaSecondsSquared;
+
+            glm::vec3 positionDelta =
+                    (glm::vec3(0, -1, 0) * static_cast<float>(accelerationDistance)) + (phys._velocity * static_cast<float>(deltaSeconds));
+
+            phys._velocity += (glm::vec3(0, -1, 0) * static_cast<float>(velocityGain));
+            transform.setPosition(transform.getPosition() + positionDelta);
+
+            // remove entities when fallen below y=-20;
+            if (transform.getPosition().y <= -20) {
+                outOfBoundsEntities.push_back(entity);
+            }
+
+            entity::EntityRegistry::getInstance().addOrSetComponent(entity, transform);
+            entity::EntityRegistry::getInstance().addOrSetComponent(entity, phys);
+        });
+
+        for (const entity::EntityReference *outOfBoundsEntity: outOfBoundsEntities) {
+            for (int i = static_cast<int>(planetVec.size() - 1); i >= 0; i--) {
+                entity::EntityReference *entity = planetVec[i];
+                if (entity->getReferenceID() == outOfBoundsEntity->getReferenceID()) {
+                    meshRenderer.removeMesh(entity);
+                    registry.eraseEntity(entity);
+                    planetVec.erase(planetVec.begin() + i);
+                    delete entity;
+                }
+            }
         }
-        sphereVelocity += (float) velocityGain;
-        updateSpherePosition();
+
+        createObjects(deltaSeconds);
+        
+        meshRenderer.update();
+        graphics::LightManager::LightSystem(registry).execute();
     }
+
 
     void FreeFallDemoState::draw(const long long &deltaMicroseconds) {
         meshRenderer.present(program.getID());
@@ -138,10 +154,29 @@ namespace gameState {
         initializeHotkeys();
         loadShaders();
         bindLighting();
-        bindCamera();
+        cameraControls.bindCamera();
     }
 
     void FreeFallDemoState::onPause() {
         spdlog::info("===== Free Fall Demo State paused =====");
+    }
+
+    void FreeFallDemoState::onExit() {
+        spdlog::info("exiting free fall demo state");
+
+        meshRenderer.clear();
+        
+        entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
+        for (entity::EntityReference *entity : planetVec){
+            registry.eraseEntity(entity);
+            delete entity;
+        }
+        planetVec.clear();
+
+        graphics::LightManager::getInstance().removeLight(lightSource);
+        entity::EntityRegistry::getInstance().eraseEntity(lightSource);
+        delete lightSource;
+
+        _isFinished = true;
     }
 }

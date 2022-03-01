@@ -1,12 +1,15 @@
 ﻿#include "orbitdemo.h"
 
 namespace gameState {
-    static graphics::Sampler *sampler;
     static constexpr auto defaultLightRange = 100.0f;
     static constexpr auto defaultLightIntensity = 0.75f;
+
     static constexpr auto defaultPlanetPosition = glm::vec3(0.0f, 3.5f, 0.0f);
+    static constexpr auto defaultPlanetScale = glm::vec3(1.0f, 1.0f, 1.0f);
     static constexpr auto defaultPlanetVelocity = glm::vec3(-2.0f, -0.5f, 0.0f);
+
     static constexpr auto defaultSunPosition = glm::vec3(0.0f, -3.5f, 0.0f);
+    static constexpr auto defaultSunScale = glm::vec3(1.6f, 1.6f, 1.6f);
     static constexpr auto defaultSunVelocity = glm::vec3(0.5f, 0.125f, 0.0f);
 
     static void printControls() {
@@ -28,9 +31,11 @@ namespace gameState {
 
     void OrbitDemoState::initializeShaders() {
         graphics::Shader::Handle fragmentShader = graphics::ShaderManager::get("shader/demo.frag", graphics::ShaderType::FRAGMENT);
+        graphics::Shader::Handle geometryShader = graphics::ShaderManager::get("shader/demo.geom", graphics::ShaderType::GEOMETRY);
         graphics::Shader::Handle vertexShader = graphics::ShaderManager::get("shader/demo.vert", graphics::ShaderType::VERTEX);
 
         program.attach(vertexShader);
+        program.attach(geometryShader);
         program.attach(fragmentShader);
         program.link();
     }
@@ -44,51 +49,17 @@ namespace gameState {
 
     void OrbitDemoState::loadGeometry() {
         meshRenderer.clear();
-        planetID = meshRenderer.draw(sphereMesh,
-                                     graphics::Texture2DManager::get("textures/planet1.png", *sampler),
-                                     graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler),
-                                     glm::translate(glm::identity<glm::mat4>(), glm::vec3(0.0f, 0.0f, 0.0f)));
-        if (sphereInvertedMesh != nullptr) {
-            sunID = meshRenderer.draw(*sphereInvertedMesh,
-                                      graphics::Texture2DManager::get("textures/SunTexture.png", *sampler),
-                                      graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler),
-                                      glm::translate(glm::identity<glm::mat4>(), glm::vec3(0.0f, 0.0f, 0.0f)));
-        } else {
-            spdlog::error("OrbitDemo - sphere inverted mesh was not initialized!");
-        }
-    }
 
-    void OrbitDemoState::initializeScene() {
-        cameraControls.initializeScene();
-
-        lightData.light_range = defaultLightRange;
-        lightData.light_intensity = defaultLightIntensity;
-
-        planetPosition = defaultPlanetPosition;
-        meshRenderer.setTransform(planetID, glm::translate(glm::identity<glm::mat4>(), defaultPlanetPosition));
-        planetVelocity = defaultPlanetVelocity;
-
-        sunPosition = defaultSunPosition;
-        meshRenderer.setTransform(sunID, glm::translate(glm::identity<glm::mat4>(), defaultSunPosition));
-        sunVelocity = defaultSunVelocity;
-    }
-
-    void OrbitDemoState::bindLighting() {
-        lightData.bindData(program.getID());
-        glUniform3fv(glsl_ambient_light, 1, glm::value_ptr(ambientLightData));
-    }
-
-    OrbitDemoState::OrbitDemoState() :
-            cameraControls(graphics::Camera(90.0f, 0.1f, 300.0f), glm::vec3(0.0f, 0.0f, -7.0f), 0.0f, 0.0f, 0.0f),
-            ambientLightData({1.4f, 1.4f, 1.4f}),
-            lightData(graphics::LightData::point(
-                    glm::vec3(0.0f, 0.0f, 0.0f),
-                    defaultLightRange,
-                    glm::vec3(1.0f, 1.0f, 0.8f),
-                    defaultLightIntensity
-            )),
-            meshRenderer(graphics::MeshRenderer()),
-            sphereMesh(graphics::Mesh(utils::MeshLoader::get("models/sphere.obj"))) {
+        planetEntity = entity::EntityRegistry::getInstance().createEntity(
+                components::Transform(defaultPlanetPosition,
+                                      glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
+                                      defaultPlanetScale),
+                components::Mesh(utils::MeshLoader::get("models/sphere.obj"),
+                                 graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
+                                 graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())),
+                components::PhysicsObject(150'000.0, defaultPlanetVelocity)
+        );
+        meshRenderer.registerMesh(planetEntity);
 
         const utils::MeshData::Handle sphereData = utils::MeshLoader::get("models/sphere.obj");
         sphereInvertedMeshData = new utils::MeshData;
@@ -99,12 +70,73 @@ namespace gameState {
         for (const auto &normal: sphereData->normals) {
             sphereInvertedMeshData->normals.push_back(normal * -1.0f);
         }
-        sphereInvertedMesh = new graphics::Mesh(sphereInvertedMeshData);
 
-        sampler = new graphics::Sampler(graphics::Sampler::Filter::LINEAR, graphics::Sampler::Filter::LINEAR,
-                                        graphics::Sampler::Filter::LINEAR, graphics::Sampler::Border::MIRROR);
+        sunEntity = entity::EntityRegistry::getInstance().createEntity(
+                components::Transform(defaultSunPosition,
+                                      glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
+                                      defaultSunScale
+                ),
+                components::Mesh(sphereInvertedMeshData,
+                                 graphics::Texture2DManager::get("textures/SunTexture.png", *graphics::Sampler::getLinearMirroredSampler()),
+                                 graphics::Texture2DManager::get("textures/Sun_phong.png", *graphics::Sampler::getLinearMirroredSampler())
+                ),
+                components::PhysicsObject(600'000.0, defaultSunVelocity)
+        );
+        meshRenderer.registerMesh(sunEntity);
 
-        printControls();
+        lightSource = entity::EntityRegistry::getInstance().createEntity(
+                components::Light::point(
+                        defaultSunPosition, defaultLightRange, glm::vec3(1.0f, 1.0f, 0.8f), defaultLightIntensity
+                ),
+                components::Transform(defaultSunPosition,
+                                      glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
+                                      glm::vec3(0.5f, 0.5, 0.5f)
+                ),
+                components::Mesh(sphereInvertedMeshData,
+                                 graphics::Texture2DManager::get("textures/SunTexture.png", *graphics::Sampler::getLinearMirroredSampler()),
+                                 graphics::Texture2DManager::get("textures/Sun_phong.png", *graphics::Sampler::getLinearMirroredSampler())
+                )
+        );
+        meshRenderer.registerMesh(lightSource);
+    }
+
+    void OrbitDemoState::initializeScene() {
+        cameraControls.initializeScene();
+
+        entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
+
+        components::Light light = registry.getComponentData<components::Light>(lightSource).value();
+        light.setRange(defaultLightRange);
+        light.setIntensity(defaultLightIntensity);
+        registry.addOrSetComponent(lightSource, light);
+
+        auto planetTransform = registry.getComponentData<components::Transform>(planetEntity).value();
+        planetTransform.setPosition(defaultPlanetPosition);
+        registry.addOrSetComponent(planetEntity, planetTransform);
+
+        auto planetPhysicsObject = registry.getComponentData<components::PhysicsObject>(planetEntity).value();
+        planetPhysicsObject._velocity = defaultPlanetVelocity;
+        registry.addOrSetComponent(planetEntity, planetPhysicsObject);
+
+        auto sunTransform = registry.getComponentData<components::Transform>(sunEntity).value();
+        sunTransform.setPosition(defaultSunPosition);
+        registry.addOrSetComponent(sunEntity, sunTransform);
+
+        auto sunPhysicsObject = registry.getComponentData<components::PhysicsObject>(sunEntity).value();
+        sunPhysicsObject._velocity = defaultSunVelocity;
+        registry.addOrSetComponent(sunEntity, sunPhysicsObject);
+    }
+
+    void OrbitDemoState::bindLighting() {
+        glUniform3fv(glsl_ambient_light, 1, glm::value_ptr(ambientLightData));
+        graphics::LightManager::getInstance().bindLights(4);
+    }
+
+    OrbitDemoState::OrbitDemoState() :
+            cameraControls(graphics::Camera(90.0f, 0.1f, 300.0f), glm::vec3(0.0f, 0.0f, -7.0f), 0.0f, 0.0f, 0.0f),
+            ambientLightData({1.4f, 1.4f, 1.4f}),
+            meshRenderer(graphics::MeshRenderer()) {
+
         initializeHotkeys();
         cameraControls.initializeCursorPosition();
         initializeShaders();
@@ -113,6 +145,7 @@ namespace gameState {
         initializeScene();
         bindLighting();
         cameraControls.bindCamera();
+        printControls();
     }
 
     void OrbitDemoState::update(const long long &deltaMicroseconds) {
@@ -130,59 +163,48 @@ namespace gameState {
         }
 
         if (!hotkey_exit_isDown && input::InputManager::isKeyPressed(input::Key::Num3)) {
-            spdlog::info("exiting orbit demo state");
-            _isFinished = true;
+            onExit();
             return;
         }
 
         initializeHotkeys();
         cameraControls.update(deltaMicroseconds);
 
+        entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
+
         static constexpr float lightRangeStep = 0.1f;
         static constexpr float lightIntensityStep = 0.05f;
+        components::Light lightComponent = registry.getComponentData<components::Light>(lightSource).value();
         if (input::InputManager::isKeyPressed(input::Key::R)) {
-            lightData.light_range += lightRangeStep;
+            lightComponent.setRange(lightComponent.getRange() + lightRangeStep);
+            spdlog::info("new range: {}", lightComponent.getRange());
         }
         if (input::InputManager::isKeyPressed(input::Key::F)) {
-            lightData.light_range -= lightRangeStep;
+            lightComponent.setRange(lightComponent.getRange() - lightRangeStep);
+            spdlog::info("new range: {}", lightComponent.getRange());
         }
         if (input::InputManager::isKeyPressed(input::Key::T)) {
-            lightData.light_intensity += lightIntensityStep;
+            lightComponent.setIntensity(lightComponent.getIntensity() + lightIntensityStep);
+            spdlog::info("new intensity: {}", lightComponent.getIntensity());
         }
         if (input::InputManager::isKeyPressed(input::Key::G)) {
-            lightData.light_intensity -= lightIntensityStep;
+            lightComponent.setIntensity(lightComponent.getIntensity() - lightIntensityStep);
+            spdlog::info("new intensity: {}", lightComponent.getIntensity());
         }
 
-        static constexpr double earthMass = 150'000.0;
-        static constexpr double sunMass = 600'000.0;
-        static constexpr double gravConstant = 6.6743e-5;
         double deltaSeconds = (double) deltaMicroseconds / 1'000'000.0;
         double deltaSecondsSquared = deltaSeconds * deltaSeconds;
-        glm::vec3 sunToPlanet = planetPosition - sunPosition;
-        glm::vec3 sunToPlanetNormal = glm::normalize(sunToPlanet);
-        float distanceSquared = glm::dot(sunToPlanet, sunToPlanet);
-        double gravForce = gravConstant * earthMass * sunMass / distanceSquared;
-        {
-            // Move Sun
-            double acceleration = gravForce / sunMass;
-            double velocityGain = acceleration * deltaSeconds;
-            double accelerationDistance = acceleration * deltaSecondsSquared / 2;
-            sunPosition = sunPosition + (sunVelocity * (float) deltaSeconds) + (sunToPlanetNormal * (float) accelerationDistance);
-            sunVelocity = sunVelocity + (sunToPlanetNormal * (float) velocityGain);
-            meshRenderer.setTransform(sunID, glm::translate(glm::identity<glm::mat4>(), sunPosition));
+        registry.execute(components::PhysicsObject::CrossObjectGravitySystem(registry, deltaSeconds, deltaSecondsSquared));
 
-            lightData.light_position = sunPosition;
-            bindLighting();
-        }
-        {
-            // Move Planet
-            double acceleration = gravForce / earthMass;
-            double velocityGain = acceleration * deltaSeconds;
-            double accelerationDistance = acceleration * deltaSecondsSquared / 2;
-            planetPosition = planetPosition + (planetVelocity * (float) deltaSeconds) + (-sunToPlanetNormal * (float) accelerationDistance);
-            planetVelocity = planetVelocity + (-sunToPlanetNormal * (float) velocityGain);
-            meshRenderer.setTransform(planetID, glm::translate(glm::identity<glm::mat4>(), planetPosition));
-        }
+        components::Transform sunPosition = registry.getComponentData<components::Transform>(sunEntity).value();
+        lightComponent.setPosition(sunPosition.getPosition());
+        registry.addOrSetComponent(lightSource, lightComponent);
+        components::Transform lightTransform = registry.getComponentData<components::Transform>(lightSource).value();
+        lightTransform.setPosition(sunPosition.getPosition());
+        registry.addOrSetComponent(lightSource, lightTransform);
+
+        meshRenderer.update();
+        graphics::LightManager::LightSystem(registry).execute();
     }
 
     void OrbitDemoState::draw(const long long &deltaMicroseconds) {
@@ -190,15 +212,29 @@ namespace gameState {
     }
 
     void OrbitDemoState::onResume() {
-        printControls();
         initializeHotkeys();
         cameraControls.initializeCursorPosition();
         loadShaders();
         bindLighting();
         cameraControls.bindCamera();
+        printControls();
     }
 
     void OrbitDemoState::onPause() {
         spdlog::info("===== Orbit Demo State paused =====");
+    }
+
+    void OrbitDemoState::onExit() {
+        spdlog::info("exiting orbit demo state");
+
+        entity::EntityRegistry::getInstance().eraseEntity(planetEntity);
+        entity::EntityRegistry::getInstance().eraseEntity(sunEntity);
+        meshRenderer.clear();
+        delete planetEntity;
+        delete sunEntity;
+
+        delete sphereInvertedMeshData;
+
+        _isFinished = true;
     }
 }

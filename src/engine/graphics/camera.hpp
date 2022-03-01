@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace graphics {
 
@@ -57,11 +58,15 @@ namespace graphics {
         void rotate(const glm::mat3 &rotationMatrix);
 
         [[nodiscard]] const glm::mat4 &getWorldToCamera() const { return worldToCameraMatrix; }
+        
+        [[nodiscard]] glm::quat getRotationAsQuaternion() const;
 
     private:
         void updateMatrices();
 
         void updateTransform();
+
+        void _rotate(const float &yawAngle, const float &pitchAngle, const float &rollAngle);
 
         glm::mat4 m_projection;
         glm::mat4 m_view;

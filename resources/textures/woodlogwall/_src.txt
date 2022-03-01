@@ -1,0 +1,9 @@
+texture / heightmap:
+https://www.textures.com/download/3DScans0427/133445
+
+phong:
+generated as lerp of heightmap with:
+  ambient [0, 48]
+  diffuse [48, 128]
+  specular [16, 64]
+  shinyness [64, 255]

@@ -15,6 +15,17 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
+#include <iostream>
+#include <time.h>
+#include <engine/utils/containers/octree.hpp>
+#include <thread>
+#include<engine/entity/componentregistry.h>
+#include <iostream>
+#include <engine/components/mesh.h>
+#include <engine/components/transform.h>
+#include <engine/components/bullet.h>
+#include <engine/entity/entityregistry.h>
+
 
 namespace gameState {
     class FreeFallDemoState : public gameState::BaseGameState {
@@ -31,28 +42,19 @@ namespace gameState {
         void onPause() override;
 
     private:
-        graphics::Camera camera;
-        GLint worldToCameraMatrixID = 0;
-        GLint cameraPositionShaderID = 0;
-        
-        glm::vec3 ambientLightData;
-        graphics::LightData lightData;
+        game::DefaultCameraControls cameraControls;
         graphics::MeshRenderer meshRenderer;
 
-        graphics::Mesh sphereMesh;
+        glm::vec3 ambientLightData;
 
-        unsigned int mainSphereID = 0;
-        unsigned int transitionSphereID = 0;
+        std::vector<entity::EntityReference *> planetVec;
+        entity::EntityReference *lightSource = nullptr;
 
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;
 
-        bool hotkey_reset_isDown = false;
-        bool hotkey_mainState_isDown = false;
+        double nextPlanetSpawnSeconds = 0.0;
         bool hotkey_exit_isDown = false;
-
-        glm::vec3 spherePosition = {0.0f, 0.0f, 0.0f};
-        float sphereVelocity = 0.0f;
 
         void initializeHotkeys();
 
@@ -62,14 +64,11 @@ namespace gameState {
 
         void loadGeometry();
 
-        void initializeScene();
-
         void bindLighting();
-        
-        void bindCamera();
-        
-        void updateSpherePosition();
 
+        void createObjects(const double &deltaSeconds);
+
+        void onExit();
     };
 }
 
