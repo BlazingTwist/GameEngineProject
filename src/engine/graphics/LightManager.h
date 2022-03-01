@@ -60,26 +60,7 @@ namespace graphics {
             glCall(glBufferSubData, GL_SHADER_STORAGE_BUFFER, 0, sizeof(unsigned int), &boundLightCount);
         };
 
-        void performResize() {
-            currentPossibleBoundLightCount = static_cast<unsigned int>(static_cast<float>(boundLightCount + 1) * 1.3f);
-            const unsigned int lightDataByteSize = currentPossibleBoundLightCount * sizeof(graphics::LightData);
-            glCall(glBufferData, GL_SHADER_STORAGE_BUFFER,
-                   LightCountField_ByteOffset + lightDataByteSize,
-                   nullptr, GL_DYNAMIC_DRAW);
-
-            auto *lights = new LightData[boundLightCount];
-            entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
-            for (unsigned int i = 0; i < boundLightCount; i++) {
-                components::Light lightComp = registry.getComponentData<components::Light>(boundLights[i]).value();
-                lights[i] = lightComp.getLightData();
-                if (lightComp.isLightDataChanged()) {
-                    lightComp.lightDataChangeHandled();
-                    registry.addOrSetComponent(boundLights[i], lightComp);
-                }
-            }
-            glCall(glBufferSubData, GL_SHADER_STORAGE_BUFFER, LightCountField_ByteOffset, static_cast<int>(lightDataByteSize), lights);
-            delete[] lights;
-        }
+        void performResize();
 
         GLuint lightSSBO;
         unsigned int boundLightCount = 0;
