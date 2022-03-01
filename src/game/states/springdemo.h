@@ -32,26 +32,22 @@ namespace gameState {
 
     private:
         game::DefaultCameraControls cameraControls;
-        
+
         glm::vec3 ambientLightData;
-        graphics::LightData lightData;
         graphics::MeshRenderer meshRenderer;
+
+        entity::EntityReference* planetEntity = nullptr;
+        entity::EntityReference* crateEntity = nullptr;
+        entity::EntityReference* lightSource = nullptr;
         
-        graphics::Mesh sphereMesh;
-        graphics::Mesh crateMesh;
-
-        unsigned int planetID = 0;
-        unsigned int crateID = 0;
-
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;
 
         bool hotkey_reset_isDown = false;
         bool hotkey_mainState_isDown = false;
         bool hotkey_exit_isDown = false;
-
-        glm::vec3 spherePosition = {0.0f, 0.0f, 0.0f};
-        float sphereVelocity = 0.0f;
+        
+        float planetVelocity = 0.0f;
 
         void initializeHotkeys();
 
@@ -64,6 +60,8 @@ namespace gameState {
         void initializeScene();
 
         void bindLighting();
+
+        void onExit();
     };
 }
 
