@@ -21,24 +21,29 @@ namespace gameState {
             return noStateWaitDelay;
         }
 
-        gameState::BaseGameState *currentGameState = gameStates.back();
-        if (currentGameState->isFinished()) {
-            gameStates.pop_back();
-            delete currentGameState;
-            if (gameStates.empty()) {
-                return noStateWaitDelay;
-            }
-            gameStates.back()->onResume();
-        }
-
         auto now = clock::now();
         // TODO if the pc is too slow for the target intervals, we're just building up time deficits that never get depleted
 
         auto timeUntilUpdate = targetUpdateInterval - std::chrono::duration_cast<microseconds>(now - lastUpdateTime).count();
-        if (timeUntilUpdate <= 0) {
+        if(timeUntilUpdate <= 0){
             timeUntilUpdate += targetUpdateInterval;
             lastUpdateTime = lastUpdateTime + microseconds(targetUpdateInterval);
-            gameStates.back()->update(targetUpdateInterval);
+
+            gameState::BaseGameState *currentGameState = gameStates.back();
+            while (true) {
+                currentGameState->update(targetUpdateInterval);
+                if (currentGameState->isFinished()) {
+                    gameStates.pop_back();
+                    delete currentGameState;
+                    if (gameStates.empty()) {
+                        return noStateWaitDelay;
+                    }
+                    currentGameState = gameStates.back();
+                    currentGameState->onResume();
+                }else{
+                    break;
+                }
+            }
         }
 
         auto timeUntilDraw = targetDrawInterval - std::chrono::duration_cast<microseconds>(now - lastDrawTime).count();
