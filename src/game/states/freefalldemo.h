@@ -18,7 +18,7 @@
 #include <iostream>
 #include <engine/components/mesh.h>
 #include <engine/components/transform.h>
-#include <engine/components/physicsobject.h>
+#include <engine/components/freefall.h>
 #include <engine/entity/EntityRegistry.h>
 
 
@@ -42,14 +42,12 @@ namespace gameState {
         
         glm::vec3 ambientLightData;
         graphics::LightData lightData;
-      
-
-        graphics::Mesh sphereMesh;
-
         
+
+
+        graphics::Sampler* sampler = nullptr;
         entity::EntityReference* planetEntity = nullptr;
-        unsigned int mainSphereID;
-        unsigned int transitionSphereID;
+        
 
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;

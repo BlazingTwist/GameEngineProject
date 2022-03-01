@@ -7,8 +7,9 @@ namespace gameState {
         spdlog::info("- Press [1] to enter spring demo");
         spdlog::info("- Press [2] to enter free fall demo");
         spdlog::info("- Press [3] to enter orbit demo");
-        spdlog::info("- Press [4] to enter a new main state");
-        spdlog::info("- Press [5] to exit this state");
+        spdlog::info("- Press [4] to enter collision demo");
+        spdlog::info("- Press [5] to enter a new main state");
+        spdlog::info("- Press [6] to exit this state");
     }
 
     void MainGameState::initializeControls() {
@@ -16,6 +17,7 @@ namespace gameState {
         hotkey_freeFallDemo_isDown = input::InputManager::isKeyPressed(input::Key::Num2);
         hotkey_orbitDemo_isDown = input::InputManager::isKeyPressed(input::Key::Num3);
         hotkey_mainState_isDown = input::InputManager::isKeyPressed(input::Key::Num4);
+        hotkey_collisionState_isDown = input::InputManager::isKeyPressed(input::Key::Num5);
         hotkey_exit_isDown = input::InputManager::isKeyPressed(input::Key::Num5);
     }
 
@@ -42,14 +44,20 @@ namespace gameState {
             gameState::GameStateManager::getInstance().startGameState(new gameState::OrbitDemoState());
             return;
         }
-        
-        if (!hotkey_mainState_isDown && input::InputManager::isKeyPressed(input::Key::Num4)) {
+        if (!hotkey_orbitDemo_isDown && input::InputManager::isKeyPressed(input::Key::Num4)) {
+            spdlog::info("main state -> orbit demo");
+            gameState::GameStateManager::getInstance().startGameState(new gameState::CollisionState());
+            return;
+        }
+
+
+        if (!hotkey_mainState_isDown && input::InputManager::isKeyPressed(input::Key::Num5)) {
             spdlog::info("main state -> main state");
             gameState::GameStateManager::getInstance().startGameState(new MainGameState());
             return;
         }
-        
-        if (!hotkey_exit_isDown && input::InputManager::isKeyPressed(input::Key::Num5)) {
+  
+        if (!hotkey_exit_isDown && input::InputManager::isKeyPressed(input::Key::Num6)) {
             spdlog::info("main state FINISHED");
             _isFinished = true;
             return;

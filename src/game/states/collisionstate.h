@@ -18,6 +18,12 @@
 #include <time.h>
 #include <engine/utils/containers/octree.hpp>
 #include <thread>
+#include<engine/entity/componentregistry.h>
+#include <iostream>
+#include <engine/components/mesh.h>
+#include <engine/components/transform.h>
+#include <engine/components/bullet.h>
+#include <engine/entity/EntityRegistry.h>
 
 namespace gameState {
     class CollisionState : public gameState::BaseGameState {
@@ -35,14 +41,14 @@ namespace gameState {
 
     private:
         game::DefaultCameraControls cameraControls;
-       
+        graphics::Sampler* sampler = nullptr;
         GLint worldToCameraMatrixID = 0;
         GLint cameraPositionShaderID = 0;
-
+       
         glm::vec3 ambientLightData;
         graphics::LightData lightData;
         graphics::MeshRenderer meshRenderer;
-        graphics::Mesh sphereMash;
+      //  graphics::Mesh sphereMash;
         
     
  
@@ -50,13 +56,13 @@ namespace gameState {
         struct Planet
        {
             
-           unsigned int planetID;
-           graphics::Mesh sphereMeshes;
+            entity::EntityReference* planetID = nullptr;
+          // graphics::Mesh sphereMeshes;
            glm::vec3 startposition;
            glm::vec3 direction;
            float velocity;
-           float angularVelocity;
-           math::AABB<3, double> aabb;
+           float angularVelocityAtStart;
+           
            
      
              
@@ -66,51 +72,49 @@ namespace gameState {
 
         struct Bullet
         {
-            unsigned int bulletID;
-            graphics::Mesh sphereMeshes;
+            entity::EntityReference* bulletID = nullptr;
+            //graphics::Mesh sphereMeshes;
             glm::vec3 bullPos;
             glm::vec3 bullDirection;
             
-            math::AABB<3, double> aabb;
+            
          //   glm::vec3 min;
          //   glm::vec3 max;
             
         };
         std::vector<Planet> planetVec;
         std::vector<Bullet> bulletVec;
-      struct TreeProcessor
+    struct TreeProcessor
         {
            int wert = 0;
             std::vector<Planet>fits;
-            Bullet m_bullet;
+            math::AABB <3, double>& m_bullet;
+            const entity::EntityReference* m_entity;
             bool descend(const math::AABB <3, double> &aabb)
             {   
-                if (aabb.intersect(m_bullet.aabb))
+                if (aabb.intersect( m_bullet ))
                     return true;
                 else return false;
             }
-            void process(const math::AABB <3, double> &aabb, const Planet& planet)
+            void process(const math::AABB <3, double> &aabb, const entity::EntityReference* planet)
             {
-                if (aabb.intersect(planet.aabb))
-                    spdlog::info(planet.planetID);
-                    for(int i=0; i<fits.size();i++)
-                    {
-                        ;
-                        if (planet.planetID != fits[i].planetID)
-                            wert++;
-                    }
-                    if (wert == fits.size()) {
-                        fits.push_back(planet);
-                    }
-                    wert = 0;
+                if (aabb.intersect(entity::EntityRegistry::getInstance().getComponentData<components::PhysicsObject>(planet).value()._aabb)) {
+                    spdlog::info("collision detected");
+                }
+                    
+             
+           
             }
+      
 
-            TreeProcessor(Bullet bullet) :
+            TreeProcessor(math::AABB <3, double> bullet) :
                 m_bullet(bullet)
             {}
+           
+
          }; 
      
-       
+  
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;
         
@@ -137,4 +141,4 @@ namespace gameState {
 
     };
 }
-#endif //ACAENGINE_COLLISIONSTATE_
+#endif //ACAENGINE_COLLISIONSTATE_H
