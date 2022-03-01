@@ -39,7 +39,6 @@ namespace gameState {
 
         if (!hotkey_freeFallDemo_isDown && input::InputManager::isKeyPressed(input::Key::Num2)) {
             spdlog::info("main state -> free fall demo");
-            // TODO fix this
             gameState::GameStateManager::getInstance().startGameState(new gameState::FreeFallDemoState());
             return;
         }
