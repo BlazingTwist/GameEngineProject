@@ -1,4 +1,4 @@
-﻿/*#include "freefalldemo.h"
+﻿#include "freefalldemo.h"
 
 namespace gameState {
     static constexpr auto defaultLightRange = 100.0f;
@@ -6,8 +6,8 @@ namespace gameState {
     static float gravConstant = 9.81f;
     static constexpr auto defaultPlanetPosition = glm::vec3(0.0f, 3.5f, 0.0f);
     static constexpr auto defaultPlanetScale = glm::vec3(1.0f, 1.0f, 1.0f);
-    static constexpr auto defaultPlanetVelocity = glm::vec3(0.0, -0.5f, 0.0f);
-    
+    static constexpr auto defaultPlanetVelocity = glm::vec3(0.0f, 0.0f, 0.0f);
+    double velocityGain = 0;
     static void printControls() {
         spdlog::info("Orbit Demo Controls:");
         spdlog::info("- WASD + EQ = Camera Movement");
@@ -50,62 +50,63 @@ namespace gameState {
             components::Transform(defaultPlanetPosition,
                 glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
                 defaultPlanetScale),
-            components::Mesh(meshRenderer.requestNewMesh(),
-                utils::MeshLoader::get("models/sphere.obj"),
-                graphics::Texture2DManager::get("textures/planet1.png", *sampler),
-                graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler)),
-            components::FreeFallComponent(9.81f,0)
+            components::Mesh(utils::MeshLoader::get("models/sphere.obj"),
+                graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
+                graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())),
+            components::PhysicsObject(150'000.0, defaultPlanetVelocity)
         );
-   
-}
+
+        meshRenderer.registerMesh(planetEntity);
+
+
+       
+            lightSource = entity::EntityRegistry::getInstance().createEntity(
+                components::Light::directional(
+                    glm::vec3(-1.0f, -1.0f, 0.5f), glm::vec3(1.0f, 1.0f, 0.8f), 0.75f
+                )
+            );
+        }
+
     void FreeFallDemoState::initializeScene() {
       
         cameraControls.initializeScene();
 
-        lightData.light_range = defaultLightRange;
-        lightData.light_intensity = defaultLightIntensity;
 
         entity::EntityRegistry& registry = entity::EntityRegistry::getInstance();
 
-        auto planetTransform = registry.getComponentData<components::Transform>(planetEntity).value();
-        planetTransform.setPosition(defaultPlanetPosition);
-        registry.addOrSetComponent(planetEntity, planetTransform);
+       
 
-        auto planetFreeFall = registry.getComponentData<components::FreeFallComponent>(planetEntity).value();
-        //planetFreeFall._velocity = defaultPlanetVelocity;
-        registry.addOrSetComponent(planetEntity, planetFreeFall);
+      //  auto planetTransform = registry.getComponentData<components::Transform>(planetEntity).value();
+      //  planetTransform.setPosition(defaultPlanetPosition);
+       // registry.addOrSetComponent(planetEntity, planetTransform);
+
+      //  auto planetPhysicsObject = registry.getComponentData<components::PhysicsObject>(planetEntity).value();
+       // planetPhysicsObject._velocity = defaultPlanetVelocity;
+       // registry.addOrSetComponent(planetEntity, planetPhysicsObject);
     }
 
     void FreeFallDemoState::bindLighting() {
-        lightData.bindData(program.getID());
         glUniform3fv(glsl_ambient_light, 1, glm::value_ptr(ambientLightData));
+        graphics::LightManager::getInstance().bindLights(4);
     }
 
   
 
     FreeFallDemoState::FreeFallDemoState() :
-        cameraControls(graphics::Camera(90.0f, 0.1f, 2000.0f), glm::vec3(0.0f, 0.0f, -15.0f), 0.0f, 0.0f, 0.0f),
+        cameraControls(graphics::Camera(90.0f, 0.1f, 300.0f), glm::vec3(0.0f, 0.0f, -7.0f), 0.0f, 0.0f, 0.0f),
         ambientLightData({ 1.4f, 1.4f, 1.4f }),
-        lightData(graphics::LightData::point(
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            defaultLightRange,
-            glm::vec3(1.0f, 1.0f, 0.8f),
-            defaultLightIntensity
-        )),
-        meshRenderer(graphics::MeshRenderer()) {
+        meshRenderer(graphics::MeshRenderer())
+         {
 
-        sampler = new graphics::Sampler(graphics::Sampler::Filter::LINEAR, graphics::Sampler::Filter::LINEAR,
-            graphics::Sampler::Filter::LINEAR, graphics::Sampler::Border::MIRROR);
-
-        printControls();
         initializeHotkeys();
         cameraControls.initializeCursorPosition();
         initializeShaders();
         loadShaders();
         loadGeometry();
-        initializeScene();
+        cameraControls.initializeScene();
         bindLighting();
-        cameraControls.bindCamera();
+        cameraControls.bindCamera();;
+        printControls();
     }
 
     void FreeFallDemoState::update(const long long &deltaMicroseconds) {
@@ -128,83 +129,51 @@ namespace gameState {
         }
 
         initializeHotkeys();
+        if (!hotkey_exit_isDown && input::InputManager::isKeyPressed(input::Key::Num1)) {
+            onExit();
+            return;
+        }
 
-        static constexpr float lightRangeStep = 0.1f;
-        static constexpr float lightIntensityStep = 0.05f;
-        if (input::InputManager::isKeyPressed(input::Key::R)) {
-            lightData.light_range += lightRangeStep;
-        }
-        if (input::InputManager::isKeyPressed(input::Key::F)) {
-            lightData.light_range -= lightRangeStep;
-        }
-        if (input::InputManager::isKeyPressed(input::Key::T)) {
-            lightData.light_intensity += lightIntensityStep;
-        }
-        if (input::InputManager::isKeyPressed(input::Key::G)) {
-            lightData.light_intensity -= lightIntensityStep;
-        }
-        ;
-        static float gravConstant = 9.81f;
+     
         double deltaSeconds = (double) deltaMicroseconds / 1'000'000.0;
         double deltaSecondsSquared = deltaSeconds * deltaSeconds;
         
      
         
         entity::EntityRegistry::getInstance().execute(
-            [deltaSeconds, deltaSecondsSquared](const entity::EntityReference* entity, components::Transform transform,
-                components::FreeFallComponent gravity) {
-                   
-                        
-                    
-                             double initialspeed = 0;
+            [deltaSeconds, deltaSecondsSquared](const entity::EntityReference* entity, components::Transform transform,components::PhysicsObject phys)
+                 {
+         
                              double acc =(9.81)/( deltaSecondsSquared);
-
-                             
-                             double velocityGain = acc * deltaSeconds/1000;
-                             
-
-                             double accelerationDistance = acc * deltaSecondsSquared / 2/50;
-                             
-                            std::cout << accelerationDistance;
+                             velocityGain= acc * deltaSeconds;
+                             std::cout <<(phys._velocity.y);
                           
-                            glm::vec3 velocityVec(0,-1,0);
-                            gravity.velocity = gravity.velocity + velocityGain * deltaSeconds;
+                             phys._velocity = phys._velocity - glm::vec3(0, 1, 0) *(float)velocityGain/100000.f;
+                           
+                            
                             double grenze = transform.getPosition().y;
                             if (grenze > (-15))
-                                transform.setPosition(transform.getPosition() + (gravity.velocity * velocityVec)); //transform.getPosition() + (float)gravity._velocity * (float)deltaSeconds
-                                //gravity._velocity=glm::vec3 ( gravity._velocity.x,gravity._velocity.y - accelerationDistance,gravity._velocity.z);
+                                transform.setPosition(transform.getPosition() + phys._velocity);
+                               
                             else {
                                 transform.setPosition(defaultPlanetPosition);
-                                //gravity.velocity = 0;
-                                if (gravity.velocity > 1)
-                                    gravity.velocity = 0;
-                            }
+                            
+                               
+                                    if (phys._velocity.y<-2)
+                                    phys._velocity=defaultPlanetVelocity;
+                                  }
 
-                            std::cout << transform.getPosition().y;
                             entity::EntityRegistry::getInstance().addOrSetComponent(entity, transform);
-                            entity::EntityRegistry::getInstance().addOrSetComponent(entity, gravity);
+                            entity::EntityRegistry::getInstance().addOrSetComponent(entity, phys);
+                                
                     });
            
-
-        //components::Transform planetPosition = entity::EntityRegistry::getInstance().getComponentData<components::Transform>(planetEntity).value();
-        //lightData.light_position = planetPosition.getPosition();
-        //bindLighting();
+        meshRenderer.update();
     }
     
-
+    
     void FreeFallDemoState::draw(const long long& deltaMicroseconds) {
-        auto& registry = entity::EntityRegistry::getInstance();
-        registry.execute([this, &registry](const entity::EntityReference* entity, components::Mesh mesh, components::Transform transform) {
-            bool meshChanged = mesh.hasAnyChanges();
-            bool transformChanged = transform.hasTransformChanged();
-            meshRenderer.draw(mesh, transform);
-            if (meshChanged) {
-                registry.addOrSetComponent(entity, mesh);
-            }
-            if (transformChanged) {
-                registry.addOrSetComponent(entity, transform);
-            }
-            });
+        
 
         meshRenderer.present(program.getID());
     }
@@ -229,4 +198,4 @@ namespace gameState {
 
         _isFinished = true;
     }
-}*/
+}
