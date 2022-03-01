@@ -17,7 +17,7 @@ namespace components {
     }
 
     void Light::setDirection(const glm::vec3 &_direction) {
-        direction = _direction;
+        direction = glm::normalize(_direction);
         lightDataChanged = true;
     }
 

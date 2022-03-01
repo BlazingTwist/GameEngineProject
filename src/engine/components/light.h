@@ -11,7 +11,7 @@ namespace components {
         [[nodiscard]] static Light directional(glm::vec3 direction, glm::vec3 lightColor, float lightIntensity) {
             Light result;
             result._type = graphics::LightType::directional;
-            result.direction = direction;
+            result.direction = glm::normalize(direction);
             result.color = lightColor;
             result.intensity = lightIntensity;
             return result;
@@ -21,7 +21,7 @@ namespace components {
             Light result;
             result._type = graphics::LightType::spot;
             result.position = position;
-            result.direction = direction;
+            result.direction = glm::normalize(direction);
             result.range = range;
             result.spotAngle = spotAngle;
             result._spotAngleCosine = glm::cos(glm::radians(spotAngle));
