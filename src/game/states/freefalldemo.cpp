@@ -201,6 +201,7 @@ namespace gameState {
                    
                 }
         }
+        deleteThese.clear();
         createObjects(deltaMicroseconds);
         meshRenderer.update();
     }
@@ -226,7 +227,7 @@ namespace gameState {
         spdlog::info("exiting orbit demo state");
 
         entity::EntityRegistry::getInstance().eraseEntity(planetEntity);
-        
+        planetVec.clear();
         delete planetEntity;
         delete sampler;
 
