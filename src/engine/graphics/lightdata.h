@@ -37,13 +37,13 @@ namespace graphics {
          *   intensity    resulting light-intensity at a given point is `intensity * ( 1 - ([point_to_light_distance] / [range]) )²`
          */
 
-        LightType light_type;
-        glm::vec3 light_position;
-        glm::vec3 light_direction;
-        float light_range;
-        float light_spot_angle;
-        glm::vec3 light_color;
-        float light_intensity;
+        alignas(4) LightType light_type;
+        alignas(4) float light_range;
+        alignas(4) float light_spot_angle;
+        alignas(4) float light_intensity;
+        alignas(16) glm::vec3 light_position;
+        alignas(16) glm::vec3 light_direction;
+        alignas(16) glm::vec3 light_color;
 
         static constexpr LightData directional(glm::vec3 direction, glm::vec3 lightColor, float lightIntensity) {
             return LightData{
@@ -81,7 +81,7 @@ namespace graphics {
             };
         }
 
-        void bindData(const unsigned int &programID);
+        LightData() = default;
 
     private:
         constexpr LightData(LightType lightType, glm::vec3 lightPosition, glm::vec3 lightDirection, float lightRange, float lightSpotAngle,
@@ -93,17 +93,6 @@ namespace graphics {
                 light_spot_angle(lightSpotAngle),
                 light_color(lightColor),
                 light_intensity(lightIntensity) {}
-
-        void prepareBinding(const unsigned int &programID);
-
-        unsigned int currentProgramID = -1;
-        GLint glsl_light_type = 0;
-        GLint glsl_light_position = 0;
-        GLint glsl_light_direction = 0;
-        GLint glsl_light_range = 0;
-        GLint glsl_light_spot_angle = 0;
-        GLint glsl_light_color = 0;
-        GLint glsl_light_intensity = 0;
     };
 }
 
