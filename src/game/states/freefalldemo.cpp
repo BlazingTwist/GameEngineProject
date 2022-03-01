@@ -1,4 +1,4 @@
-﻿#include "freefalldemo.h"
+﻿/*#include "freefalldemo.h"
 
 namespace gameState {
     static constexpr auto defaultLightRange = 100.0f;
@@ -217,4 +217,4 @@ namespace gameState {
 
         _isFinished = true;
     }
-}
+}*/

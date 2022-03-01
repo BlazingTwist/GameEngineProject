@@ -1,4 +1,4 @@
-#ifndef ACAENGINE_COLLISIONSTATE_H
+/*#ifndef ACAENGINE_COLLISIONSTATE_H
 #define ACAENGINE_COLLISIONSTATE_H
 #include <engine/gamestate/basegamestate.h>
 #include <engine/graphics/lightdata.h>
@@ -137,4 +137,4 @@ namespace gameState {
 
     };
 }
-#endif //ACAENGINE_COLLISIONSTATE_
+#endif //ACAENGINE_COLLISIONSTATE_*/
