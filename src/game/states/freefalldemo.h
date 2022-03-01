@@ -44,26 +44,17 @@ namespace gameState {
     private:
         game::DefaultCameraControls cameraControls;
         graphics::MeshRenderer meshRenderer;
-        
+
         glm::vec3 ambientLightData;
 
-       
-        std::vector<entity::EntityReference*>deleteThese;
-        std::vector< entity::EntityReference*>planetVec;
-        entity::EntityReference* lightSource = nullptr;
-        graphics::Sampler* sampler = nullptr;
-        entity::EntityReference* planetEntity = nullptr;
-        
+        std::vector<entity::EntityReference *> planetVec;
+        entity::EntityReference *lightSource = nullptr;
 
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;
 
         double nextPlanetSpawnSeconds = 0.0;
-        bool hotkey_reset_isDown = false;
-        bool hotkey_mainState_isDown = false;
         bool hotkey_exit_isDown = false;
-
-        float sphereVelocity = 0.0f;
 
         void initializeHotkeys();
 
@@ -73,15 +64,9 @@ namespace gameState {
 
         void loadGeometry();
 
-        void initializeScene();
-
         void bindLighting();
-        
-        void bindCamera();
-        
-        void updateSpherePosition();
 
-        void createObjects(const double& deltaSeconds);
+        void createObjects(const double &deltaSeconds);
 
         void onExit();
     };
