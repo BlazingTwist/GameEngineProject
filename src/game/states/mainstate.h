@@ -22,15 +22,15 @@ namespace gameState {
 
     public:
         MainGameState();
-        
+
         void update(const long long int &deltaMicroseconds) override;
 
         void draw(const long long int &deltaMicroseconds) override;
 
         void onResume() override;
-        
+
         void onPause() override;
-        
+
     private:
         bool hotkey_springDemo_isDown = false;
         bool hotkey_freeFallDemo_isDown = false;

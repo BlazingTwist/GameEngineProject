@@ -4,7 +4,7 @@
 #include "engine/graphics/renderer/mesh.hpp"
 #include "engine/graphics/core/texture.hpp"
 
-namespace graphics{
+namespace graphics {
     class MeshRenderer;
 }
 

@@ -8,6 +8,8 @@
 #include "EntityReference.h"
 
 namespace entityV2 {
+    
+    // EntityV2 works but should not be used because nobody likes it.
     class EntityRegistry {
 
     private:

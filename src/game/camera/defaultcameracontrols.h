@@ -10,7 +10,8 @@
 namespace game {
     class DefaultCameraControls {
     public:
-        DefaultCameraControls(graphics::Camera camera, glm::vec3 initialCameraPosition, float initialCameraPitch, float initialCameraYaw, float initialCameraRoll);
+        DefaultCameraControls(graphics::Camera camera, glm::vec3 initialCameraPosition, float initialCameraPitch, float initialCameraYaw,
+                              float initialCameraRoll);
 
         graphics::Camera camera;
         GLint worldToCameraMatrixID = 0;
@@ -28,7 +29,7 @@ namespace game {
         void initializeScene();
 
         void bindCamera() const;
-        
+
         void update(const long long &deltaMicroseconds);
 
     private:

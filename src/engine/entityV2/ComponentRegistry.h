@@ -32,7 +32,7 @@ namespace entityV2 {
             components.push_back(reference);
             return reference;
         }
-        
+
         void removeComponent(ComponentReference *component) {
             const unsigned int componentID = component->_componentID;
             if (componentID == components.size() - 1) {
@@ -48,7 +48,7 @@ namespace entityV2 {
 
     private:
         explicit ComponentRegistry() = default;
-        
+
         std::vector<ComponentReference *> components = {};
 
     };

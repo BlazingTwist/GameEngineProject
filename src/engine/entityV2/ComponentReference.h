@@ -7,7 +7,7 @@ namespace entityV2 {
         [[nodiscard]] bool isExpired() const {
             return _isExpired;
         }
-        
+
         [[nodiscard]] bool isPresent() const {
             return !_isExpired && _componentPtr != nullptr;
         }
@@ -33,13 +33,14 @@ namespace entityV2 {
                 _entityID(entityID),
                 _componentID(componentID),
                 _componentPtr(componentPtr) {}
-        
+
         unsigned int _entityID;
         unsigned int _componentID;
         bool _isExpired = false;
         void *_componentPtr = nullptr;
 
         friend class ComponentRegistry;
+
         friend class EntityRegistry;
     };
 }

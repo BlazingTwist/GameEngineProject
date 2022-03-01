@@ -14,7 +14,7 @@ namespace gameState {
         virtual void onResume() = 0;
 
         virtual void onPause() = 0;
-        
+
         virtual ~BaseGameState() = default;
 
     protected:

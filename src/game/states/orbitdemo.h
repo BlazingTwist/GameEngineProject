@@ -36,15 +36,15 @@ namespace gameState {
 
     private:
         game::DefaultCameraControls cameraControls;
-        
+
         glm::vec3 ambientLightData;
         graphics::MeshRenderer meshRenderer;
 
         utils::MeshData *sphereInvertedMeshData = nullptr;
 
-        entity::EntityReference* planetEntity = nullptr;
-        entity::EntityReference* sunEntity = nullptr;
-        entity::EntityReference* lightSource = nullptr;
+        entity::EntityReference *planetEntity = nullptr;
+        entity::EntityReference *sunEntity = nullptr;
+        entity::EntityReference *lightSource = nullptr;
 
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;
@@ -64,7 +64,7 @@ namespace gameState {
         void initializeScene();
 
         void bindLighting();
-        
+
         void onExit();
 
     };

@@ -139,7 +139,7 @@ namespace gameState {
         }
 
         createObjects(deltaSeconds);
-        
+
         meshRenderer.update();
         graphics::LightManager::LightSystem(registry).execute();
     }
@@ -165,9 +165,9 @@ namespace gameState {
         spdlog::info("exiting free fall demo state");
 
         meshRenderer.clear();
-        
+
         entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
-        for (entity::EntityReference *entity : planetVec){
+        for (entity::EntityReference *entity: planetVec) {
             registry.eraseEntity(entity);
             delete entity;
         }
