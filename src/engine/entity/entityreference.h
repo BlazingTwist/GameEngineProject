@@ -18,6 +18,20 @@ namespace entity {
             return _referenceID;
         }
 
+        bool operator==(const EntityReference &rhs) const {
+            if(_isExpired || rhs._isExpired){
+                return false;
+            }
+            return _referenceID == rhs._referenceID;
+        }
+
+        bool operator!=(const EntityReference &rhs) const {
+            if(_isExpired || rhs._isExpired){
+                return true;
+            }
+            return _referenceID != rhs._referenceID;
+        }
+
     protected:
         explicit EntityReference(int referenceID) : _referenceID(referenceID) {};
 
