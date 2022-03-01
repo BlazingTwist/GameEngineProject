@@ -67,25 +67,28 @@ namespace gameState {
                 components::Transform(glm::vec3(0.0f, 0.0f, 0.0f),
                                       glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
                                       glm::vec3(1.0f, 1.0f, 1.0f)),
-                components::Mesh(meshRenderer.requestNewMesh(),
-                                 utils::MeshLoader::get("models/xyplane.obj"),
+                components::Mesh(utils::MeshLoader::get("models/xyplane.obj"),
                                  getWoodTexture(), getWoodPhong(), getWoodNormal(), getWoodHeightMap())
+        );
+        meshRenderer.registerMesh(xyPlaneEntity);
+
+        lightSource = entity::EntityRegistry::getInstance().createEntity(
+                components::Light(graphics::LightData::directional(
+                        glm::normalize(glm::vec3(-1.0f, -1.0f, 1.0f)),
+                        glm::vec3(1.0f, 1.0f, 0.8f),
+                        2.5f
+                ))
         );
     }
 
     void ParallaxOcclusionDemo::bindLighting() {
-        lightData.bindData(program.getID());
         glUniform3fv(glsl_ambient_light, 1, glm::value_ptr(ambientLightData));
+        graphics::LightManager::getInstance().bindLights(4);
     }
 
     ParallaxOcclusionDemo::ParallaxOcclusionDemo() :
             cameraControls(graphics::Camera(90.0f, 0.1f, 300.0f), glm::vec3(0.0f, 0.0f, -3.0f), 0.0f, 0.0f, 0.0f),
             ambientLightData({1.4f, 1.4f, 1.4f}),
-            lightData(graphics::LightData::directional(
-                    glm::normalize(glm::vec3(-1.0f, -1.0f, 1.0f)),
-                    glm::vec3(1.0f, 1.0f, 0.8f),
-                    2.5f
-            )),
             meshRenderer(graphics::MeshRenderer()) {
 
         initializeHotkeys();
@@ -160,18 +163,9 @@ namespace gameState {
 
     void ParallaxOcclusionDemo::draw(const long long &deltaMicroseconds) {
         auto &registry = entity::EntityRegistry::getInstance();
-        registry.execute([this, &registry](const entity::EntityReference *entity, components::Mesh mesh, components::Transform transform) {
-            bool meshChanged = mesh.hasAnyChanges();
-            bool transformChanged = transform.hasTransformChanged();
-            meshRenderer.draw(mesh, transform);
-            if (meshChanged) {
-                registry.addOrSetComponent(entity, mesh);
-            }
-            if (transformChanged) {
-                registry.addOrSetComponent(entity, transform);
-            }
-        });
+        graphics::LightManager::LightSystem(registry).execute();
 
+        meshRenderer.update();
         meshRenderer.present(program.getID());
     }
 
@@ -194,6 +188,10 @@ namespace gameState {
         entity::EntityRegistry::getInstance().eraseEntity(xyPlaneEntity);
         meshRenderer.clear();
         delete xyPlaneEntity;
+
+        graphics::LightManager::getInstance().removeLight(entity::EntityRegistry::getInstance().getComponentData<components::Light>(lightSource).value());
+        entity::EntityRegistry::getInstance().eraseEntity(lightSource);
+        delete lightSource;
 
         _isFinished = true;
     }

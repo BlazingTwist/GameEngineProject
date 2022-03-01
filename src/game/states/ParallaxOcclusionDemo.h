@@ -13,7 +13,8 @@
 #include <game/camera/defaultcameracontrols.h>
 #include <engine/components/mesh.h>
 #include <engine/components/transform.h>
-#include "mainstate.h"
+#include <engine/components/light.h>
+#include <engine/graphics/LightManager.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
@@ -37,10 +38,10 @@ namespace gameState {
         game::DefaultCameraControls cameraControls;
 
         glm::vec3 ambientLightData;
-        graphics::LightData lightData;
         graphics::MeshRenderer meshRenderer;
         
         entity::EntityReference* xyPlaneEntity = nullptr;
+        entity::EntityReference* lightSource = nullptr;
 
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;
