@@ -132,26 +132,24 @@ namespace gameState {
             return;
         }
 
+        entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
+
         if (input::InputManager::isKeyPressed(input::Key::UP)) {
-            auto &registry = entity::EntityRegistry::getInstance();
             components::Transform transform = registry.getComponentData<components::Transform>(xyPlaneEntity).value();
             transform.setRotation(transform.getRotation() * glm::quat(glm::vec3(glm::radians(0.5f), 0.0f, 0.0f)));
             registry.addOrSetComponent(xyPlaneEntity, transform);
         }
         if (input::InputManager::isKeyPressed(input::Key::DOWN)) {
-            auto &registry = entity::EntityRegistry::getInstance();
             components::Transform transform = registry.getComponentData<components::Transform>(xyPlaneEntity).value();
             transform.setRotation(transform.getRotation() * glm::quat(glm::vec3(glm::radians(-0.5f), 0.0f, 0.0f)));
             registry.addOrSetComponent(xyPlaneEntity, transform);
         }
         if (input::InputManager::isKeyPressed(input::Key::RIGHT)) {
-            auto &registry = entity::EntityRegistry::getInstance();
             components::Transform transform = registry.getComponentData<components::Transform>(xyPlaneEntity).value();
             transform.setRotation(transform.getRotation() * glm::quat(glm::vec3(0.0f, 0.0f, glm::radians(0.5f))));
             registry.addOrSetComponent(xyPlaneEntity, transform);
         }
         if (input::InputManager::isKeyPressed(input::Key::LEFT)) {
-            auto &registry = entity::EntityRegistry::getInstance();
             components::Transform transform = registry.getComponentData<components::Transform>(xyPlaneEntity).value();
             transform.setRotation(transform.getRotation() * glm::quat(glm::vec3(0.0f, 0.0f, glm::radians(-0.5f))));
             registry.addOrSetComponent(xyPlaneEntity, transform);
@@ -160,12 +158,10 @@ namespace gameState {
         initializeHotkeys();
         cameraControls.update(deltaMicroseconds);
         meshRenderer.update();
+        graphics::LightManager::LightSystem(registry).execute();
     }
 
     void ParallaxOcclusionDemo::draw(const long long &deltaMicroseconds) {
-        auto &registry = entity::EntityRegistry::getInstance();
-        graphics::LightManager::LightSystem(registry).execute();
-        
         meshRenderer.present(program.getID());
     }
 

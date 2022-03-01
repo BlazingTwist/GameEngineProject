@@ -95,11 +95,13 @@ namespace gameState {
     }
 
     void LightDemo::update(const long long &deltaMicroseconds) {
+        entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
+        
         if (!hotkey_spawnLight_isDown && input::InputManager::isKeyPressed(input::Key::Num1)) {
             const glm::vec3 &position = cameraControls.camera.getPosition();
             const glm::vec3 &camForward = cameraControls.camera.forwardVector();
             const glm::quat camRotation = cameraControls.camera.getRotationAsQuaternion();
-            entity::EntityReference *newLightEntity = entity::EntityRegistry::getInstance().createEntity(
+            entity::EntityReference *newLightEntity = registry.createEntity(
                     components::Light::spot(position, camForward, 50.0f, 22.5f, getRandomColor(), 0.75f),
                     components::Mesh(sphereInvertedMeshData,
                                      graphics::Texture2DManager::get("textures/SunTexture.png", *graphics::Sampler::getLinearMirroredSampler()),
@@ -120,8 +122,7 @@ namespace gameState {
                 float minDistance = 0.0f;
                 const int lightCount = static_cast<int>(activeLights.size());
                 for (int i = 0; i < lightCount; ++i) {
-                    components::Light lightComp = entity::EntityRegistry::getInstance()
-                            .getComponentData<components::Light>(activeLights[i]).value();
+                    components::Light lightComp = registry.getComponentData<components::Light>(activeLights[i]).value();
                     float distance = glm::length(camPosition - lightComp.getPosition());
                     if (distance < minDistance || nearestLightEntity < 0) {
                         nearestLightEntity = i;
@@ -132,7 +133,7 @@ namespace gameState {
                 entity::EntityReference *lightEntity = activeLights[nearestLightEntity];
                 graphics::LightManager::getInstance().removeLight(lightEntity);
                 meshRenderer.removeMesh(lightEntity);
-                entity::EntityRegistry::getInstance().eraseEntity(lightEntity);
+                registry.eraseEntity(lightEntity);
                 activeLights.erase(activeLights.begin() + nearestLightEntity);
                 delete lightEntity;
             }
@@ -146,13 +147,10 @@ namespace gameState {
         initializeHotkeys();
         cameraControls.update(deltaMicroseconds);
         meshRenderer.update();
+        graphics::LightManager::LightSystem(registry).execute();
     }
 
     void LightDemo::draw(const long long &deltaMicroseconds) {
-        auto &registry = entity::EntityRegistry::getInstance();
-
-        graphics::LightManager::LightSystem(registry).execute();
-
         meshRenderer.present(program.getID());
     }
 

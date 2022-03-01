@@ -192,11 +192,10 @@ namespace gameState {
         registry.addOrSetComponent(planetEntity, planetTransform);
 
         meshRenderer.update();
+        graphics::LightManager::LightSystem(registry).execute();
     }
 
     void SpringDemoState::draw(const long long &deltaMicroseconds) {
-        auto &registry = entity::EntityRegistry::getInstance();
-        graphics::LightManager::LightSystem(registry).execute();
         meshRenderer.present(program.getID());
     }
 
