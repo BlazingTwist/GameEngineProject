@@ -43,6 +43,7 @@ namespace gameState {
         spdlog::info("Spring Demo Controls:");
         spdlog::info("- WASD + EQ = Camera Movement");
         spdlog::info("- Mouse = Camera Yaw/Pitch");
+        spdlog::info("- LeftClick to spawn a projectile in view direction");
         spdlog::info("- press [1] to exit this state");
     }
 
