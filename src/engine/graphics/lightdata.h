@@ -37,62 +37,25 @@ namespace graphics {
          *   intensity    resulting light-intensity at a given point is `intensity * ( 1 - ([point_to_light_distance] / [range]) )²`
          */
 
-        alignas(4) LightType light_type;
-        alignas(4) float light_range;
-        alignas(4) float light_spot_angle;
-        alignas(4) float light_intensity;
-        alignas(16) glm::vec3 light_position;
-        alignas(16) glm::vec3 light_direction;
-        alignas(16) glm::vec3 light_color;
-
-        static constexpr LightData directional(glm::vec3 direction, glm::vec3 lightColor, float lightIntensity) {
-            return LightData{
-                    LightType::directional,
-                    glm::vec3(0.0f, 0.0f, 0.0f),
-                    direction,
-                    0.0f,
-                    0.0f,
-                    lightColor,
-                    lightIntensity
-            };
-        }
-
-        static constexpr LightData spot(glm::vec3 position, glm::vec3 direction, float range, float spotAngle, glm::vec3 lightColor, float lightIntensity) {
-            return LightData{
-                    LightType::spot,
-                    position,
-                    direction,
-                    range,
-                    spotAngle,
-                    lightColor,
-                    lightIntensity
-            };
-        }
-
-        static constexpr LightData point(glm::vec3 position, float range, glm::vec3 lightColor, float lightIntensity) {
-            return LightData{
-                    LightType::point,
-                    position,
-                    glm::vec3(0.0f, 0.0f, 0.0f),
-                    range,
-                    0.0f,
-                    lightColor,
-                    lightIntensity
-            };
-        }
+        alignas(4) LightType _type;
+        alignas(4) float _range;
+        alignas(4) float _spotAngleCosine;
+        alignas(4) float _intensity;
+        alignas(16) glm::vec3 _position;
+        alignas(16) glm::vec3 _direction;
+        alignas(16) glm::vec3 _color;
 
         LightData() = default;
 
-    private:
-        constexpr LightData(LightType lightType, glm::vec3 lightPosition, glm::vec3 lightDirection, float lightRange, float lightSpotAngle,
+        constexpr LightData(LightType lightType, glm::vec3 lightPosition, glm::vec3 lightDirection, float lightRange, float lightSpotAngleCosine,
                             glm::vec3 lightColor, float lightIntensity) :
-                light_type(lightType),
-                light_position(lightPosition),
-                light_direction(lightDirection),
-                light_range(lightRange),
-                light_spot_angle(lightSpotAngle),
-                light_color(lightColor),
-                light_intensity(lightIntensity) {}
+                _type(lightType),
+                _position(lightPosition),
+                _direction(lightDirection),
+                _range(lightRange),
+                _spotAngleCosine(lightSpotAngleCosine),
+                _color(lightColor),
+                _intensity(lightIntensity) {}
     };
 }
 
