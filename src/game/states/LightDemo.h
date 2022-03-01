@@ -44,6 +44,7 @@ namespace gameState {
         utils::MeshData *sphereInvertedMeshData = nullptr;
 
         entity::EntityReference *xyPlaneEntity = nullptr;
+        entity::EntityReference *shipEntity = nullptr;
 
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;

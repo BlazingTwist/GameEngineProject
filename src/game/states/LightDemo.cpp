@@ -38,7 +38,9 @@ namespace gameState {
     void LightDemo::loadGeometry() {
         meshRenderer.clear();
 
-        xyPlaneEntity = entity::EntityRegistry::getInstance().createEntity(
+        entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
+
+        xyPlaneEntity = registry.createEntity(
                 components::Transform(glm::vec3(0.0f, 0.0f, 0.0f),
                                       glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
                                       glm::vec3(1.0f, 1.0f, 1.0f)),
@@ -49,6 +51,20 @@ namespace gameState {
                                  graphics::Texture2DManager::get("textures/woodlogwall/heightmap.png", *graphics::Sampler::getLinearMirroredSampler()))
         );
         meshRenderer.registerMesh(xyPlaneEntity);
+
+        shipEntity = registry.createEntity(
+                components::Mesh(utils::MeshLoader::get("models/starSparrow/mesh01.obj"),
+                                 graphics::Texture2DManager::get("models/starSparrow/texture/StarSparrow_Green.png",
+                                                                 *graphics::Sampler::getLinearMirroredSampler()),
+                                 graphics::Texture2DManager::get("models/starSparrow/phong.png", *graphics::Sampler::getLinearMirroredSampler()),
+                                 graphics::Texture2DManager::get("models/starSparrow/normal.png", *graphics::Sampler::getLinearMirroredSampler())
+                ),
+                components::Transform(glm::vec3(10.0f, 0.0f, 0.0f),
+                                      glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
+                                      glm::vec3(1.0f, 1.0f, 1.0f)
+                )
+        );
+        meshRenderer.registerMesh(shipEntity);
 
         const utils::MeshData::Handle sphereData = utils::MeshLoader::get("models/sphere.obj");
         sphereInvertedMeshData = new utils::MeshData;
@@ -96,7 +112,7 @@ namespace gameState {
 
     void LightDemo::update(const long long &deltaMicroseconds) {
         entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
-        
+
         if (!hotkey_spawnLight_isDown && input::InputManager::isKeyPressed(input::Key::Num1)) {
             const glm::vec3 &position = cameraControls.camera.getPosition();
             const glm::vec3 &camForward = cameraControls.camera.forwardVector();
@@ -174,6 +190,9 @@ namespace gameState {
 
         entity::EntityRegistry::getInstance().eraseEntity(xyPlaneEntity);
         delete xyPlaneEntity;
+
+        entity::EntityRegistry::getInstance().eraseEntity(shipEntity);
+        delete shipEntity;
 
         for (entity::EntityReference *entity: activeLights) {
             graphics::LightManager::getInstance().removeLight(entity::EntityRegistry::getInstance().getComponentData<components::Light>(entity).value());
