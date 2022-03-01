@@ -16,10 +16,15 @@
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 #include <iostream>
+#include <time.h>
+#include <engine/utils/containers/octree.hpp>
+#include <thread>
+#include<engine/entity/componentregistry.h>
+#include <iostream>
 #include <engine/components/mesh.h>
 #include <engine/components/transform.h>
-#include <engine/components/freefall.h>
-#include <engine/entity/EntityRegistry.h>
+#include <engine/components/bullet.h>
+#include <engine/entity/entityregistry.h>
 
 
 namespace gameState {
@@ -41,10 +46,10 @@ namespace gameState {
         graphics::MeshRenderer meshRenderer;
         
         glm::vec3 ambientLightData;
-        graphics::LightData lightData;
+        
         
 
-
+        entity::EntityReference* lightSource = nullptr;
         graphics::Sampler* sampler = nullptr;
         entity::EntityReference* planetEntity = nullptr;
         

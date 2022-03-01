@@ -16,7 +16,7 @@ namespace components {
         PhysicsObject(const glm::vec3 &velocity, const math::AABB<3, float> &aabb) : _velocity(velocity), _aabb(aabb) {}
 
         double _mass = 1.0;
-        glm::vec3 _velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 _velocity;
         math::AABB<3, float> _aabb;
 
         class CrossObjectGravitySystem {
