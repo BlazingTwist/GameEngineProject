@@ -46,18 +46,7 @@ namespace gameState {
     void FreeFallDemoState::loadGeometry() {
         meshRenderer.clear();
 
-        planetEntity = entity::EntityRegistry::getInstance().createEntity(
-            components::Transform(defaultPlanetPosition,
-                glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
-                defaultPlanetScale),
-            components::Mesh(utils::MeshLoader::get("models/sphere.obj"),
-                graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
-                graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())),
-            components::PhysicsObject(150'000.0, defaultPlanetVelocity)
-        );
-
-        meshRenderer.registerMesh(planetEntity);
-
+      
 
        
             lightSource = entity::EntityRegistry::getInstance().createEntity(
@@ -73,16 +62,6 @@ namespace gameState {
 
 
         entity::EntityRegistry& registry = entity::EntityRegistry::getInstance();
-
-       
-
-      //  auto planetTransform = registry.getComponentData<components::Transform>(planetEntity).value();
-      //  planetTransform.setPosition(defaultPlanetPosition);
-       // registry.addOrSetComponent(planetEntity, planetTransform);
-
-      //  auto planetPhysicsObject = registry.getComponentData<components::PhysicsObject>(planetEntity).value();
-       // planetPhysicsObject._velocity = defaultPlanetVelocity;
-       // registry.addOrSetComponent(planetEntity, planetPhysicsObject);
     }
 
     void FreeFallDemoState::bindLighting() {
@@ -108,6 +87,37 @@ namespace gameState {
         cameraControls.bindCamera();;
         printControls();
     }
+    void FreeFallDemoState::createObjects(const double& deltaSeconds)
+    {
+
+        nextPlanetSpawnSeconds -= deltaSeconds;
+        if (nextPlanetSpawnSeconds <= 0) {
+            nextPlanetSpawnSeconds = 2.0;
+
+
+
+            std::random_device randomDevice;
+            std::mt19937 gen(randomDevice());
+            std::uniform_real_distribution<> positionDistribution(0, 9);
+
+
+            glm::vec3 position = glm::vec3(positionDistribution(gen), 15, positionDistribution(gen));
+
+          entity::EntityReference *planetEntity = entity::EntityRegistry::getInstance().createEntity(
+                components::Transform(position,
+                    glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
+                    defaultPlanetScale),
+                components::Mesh(utils::MeshLoader::get("models/sphere.obj"),
+                    graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
+                    graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())),
+                components::PhysicsObject(150'000.0, defaultPlanetVelocity)
+            );
+
+            meshRenderer.registerMesh(planetEntity);
+            planetVec.push_back(planetEntity);
+        }
+        }
+
 
     void FreeFallDemoState::update(const long long &deltaMicroseconds) {
         if (!hotkey_reset_isDown && input::InputManager::isKeyPressed(input::Key::Num1)) {
@@ -133,41 +143,65 @@ namespace gameState {
             onExit();
             return;
         }
-
-     
+   
         double deltaSeconds = (double) deltaMicroseconds / 1'000'000.0;
         double deltaSecondsSquared = deltaSeconds * deltaSeconds;
-        
+
      
         
         entity::EntityRegistry::getInstance().execute(
-            [deltaSeconds, deltaSecondsSquared](const entity::EntityReference* entity, components::Transform transform,components::PhysicsObject phys)
+            [deltaSeconds, deltaSecondsSquared,this]( const entity::EntityReference* entity, components::Transform transform,components::PhysicsObject phys)
                  {
          
                              double acc =(9.81)/( deltaSecondsSquared);
                              velocityGain= acc * deltaSeconds;
-                             std::cout <<(phys._velocity.y);
+                            
                           
                              phys._velocity = phys._velocity - glm::vec3(0, 1, 0) *(float)velocityGain/100000.f;
                            
                             
                             double grenze = transform.getPosition().y;
-                            if (grenze > (-15))
+                            if (grenze > (-20)) {
                                 transform.setPosition(transform.getPosition() + phys._velocity);
+                                entity::EntityRegistry::getInstance().addOrSetComponent(entity, transform);
+                                entity::EntityRegistry::getInstance().addOrSetComponent(entity, phys);
+                            }
                                
                             else {
-                                transform.setPosition(defaultPlanetPosition);
-                            
-                               
-                                    if (phys._velocity.y<-2)
-                                    phys._velocity=defaultPlanetVelocity;
-                                  }
+                                
+                                const int id = entity->getReferenceID();
+                                for (unsigned int i=0; i<planetVec.size();i++)
+                                {
+                                    
+                                    
+                                    entity::EntityReference* storedPlanet = planetVec[i];
+                                    if (id == storedPlanet->getReferenceID()) {
+                                        
+                                        deleteThese.push_back(storedPlanet);
+                                      
+                                    }
 
-                            entity::EntityRegistry::getInstance().addOrSetComponent(entity, transform);
-                            entity::EntityRegistry::getInstance().addOrSetComponent(entity, phys);
+                                }
+
+                            }
                                 
                     });
-           
+       
+
+        for (int i = 0; i < deleteThese.size(); i++)
+        {
+
+            for (int k = 0; k < planetVec.size(); k++)
+
+                if (planetVec[k] == deleteThese[i]) {
+                    meshRenderer.removeMesh(planetVec[k]);
+                    entity::EntityRegistry::getInstance().eraseEntity(planetVec[k]);
+                    delete planetVec[k];
+                    planetVec.erase(planetVec.begin() + k);
+                   
+                }
+        }
+        createObjects(deltaMicroseconds);
         meshRenderer.update();
     }
     
