@@ -9,16 +9,15 @@ namespace components {
     public:
         PhysicsObject() {}
 
-        PhysicsObject(const double mass) : _mass(mass) {}
-
-        PhysicsObject(const glm::vec3& velocity ,const double angularVelocity, const math::AABB <3, double>& aabb ) : _velocity(velocity), _angularVelocity(angularVelocity), _aabb(aabb) {}
+        explicit PhysicsObject(const double mass) : _mass(mass) {}
 
         PhysicsObject(const double mass, const glm::vec3 &velocity) : _mass(mass), _velocity(velocity) {}
 
-        double _mass;
-        glm::vec3 _velocity;
-        double _angularVelocity;
-        math::AABB<3, double> _aabb;
+        PhysicsObject(const glm::vec3 &velocity, const math::AABB<3, float> &aabb) : _velocity(velocity), _aabb(aabb) {}
+
+        double _mass = 1.0;
+        glm::vec3 _velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+        math::AABB<3, float> _aabb;
 
         class CrossObjectGravitySystem {
         public:
@@ -28,8 +27,8 @@ namespace components {
             void operator()(const entity::EntityReference *entity2, components::Transform transform2, components::PhysicsObject phys2) const {
                 registry.execute(
                         [this, entity2, transform2, phys2](const entity::EntityReference *entity,
-                                                                                              components::Transform transform,
-                                                                                              components::PhysicsObject phys) {
+                                                           components::Transform transform,
+                                                           components::PhysicsObject phys) {
                             if (entity->getReferenceID() == entity2->getReferenceID()) {
                                 return;
                             }
