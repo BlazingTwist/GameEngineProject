@@ -24,7 +24,7 @@
 #include <engine/components/mesh.h>
 #include <engine/components/transform.h>
 #include <engine/components/bullet.h>
-#include <engine/entity/EntityRegistry.h>
+#include <engine/entity/entityregistry.h>
 
 namespace gameState {
     class CollisionState : public gameState::BaseGameState {
@@ -46,76 +46,23 @@ namespace gameState {
         glm::vec3 ambientLightData;
         graphics::MeshRenderer meshRenderer;
 
-        struct Planet {
-            entity::EntityReference *planetID = nullptr;
-            // graphics::Mesh sphereMeshes;
-            glm::vec3 startposition;
-            glm::vec3 direction;
-            float velocity;
-            float angularVelocityAtStart;
-        };
+        entity::EntityReference *lightSource = nullptr;
+        std::vector<entity::EntityReference *> planetVec;
+        std::vector<entity::EntityReference *> bulletVec;
 
-
-        struct Bullet {
-            entity::EntityReference *bulletID = nullptr;
-            //graphics::Mesh sphereMeshes;
-            glm::vec3 bullPos;
-            glm::vec3 bullDirection;
-
-
-            //   glm::vec3 min;
-            //   glm::vec3 max;
-
-        };
-        std::vector<Planet> planetVec;
-        std::vector<Bullet> bulletVec;
-
-        struct TreeProcessor {
-            int wert = 0;
-            std::vector<Planet> fits;
-            math::AABB<3, double> &m_bullet;
-            const entity::EntityReference *m_entity;
-
-            bool descend(const math::AABB<3, double> &aabb) {
-                if (aabb.intersect(m_bullet))
-                    return true;
-                else return false;
-            }
-
-            void process(const math::AABB<3, double> &aabb, const entity::EntityReference *planet) {
-                if (aabb.intersect(entity::EntityRegistry::getInstance().getComponentData<components::PhysicsObject>(planet).value()._aabb)) {
-                    spdlog::info("collision detected");
-                }
-
-
-            }
-
-
-            TreeProcessor(math::AABB<3, double> bullet) :
-                    m_bullet(bullet) {}
-
-
-        };
-
+        utils::SparseOctree<const entity::EntityReference *, 3, float> collisionTree;
+        
+        double nextPlanetSpawnSeconds = 0.0;
+        double bulletCoolDownSeconds = 0.0;
 
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;
 
-        bool hotkey_reset_isDown = false;
-        bool hotkey_mainState_isDown = false;
         bool hotkey_exit_isDown = false;
-        int randomArray[100];
-        int randomArray2[100];
 
-        void createBullet(const long long int &deltaMicroseconds);
-
-        void updatePos(const long long int &deltaMicroseconds);
-
-        void bindCamera();
+        void createBullet();
 
         void initializeHotkeys();
-
-        void updateBulletPos(const long long int &deltaMicroseconds);
 
         void initializeShaders();
 
@@ -123,13 +70,11 @@ namespace gameState {
 
         void loadGeometry();
 
-        void createPlanets(const long long &deltaMicroseconds);
-
-        void initializeScene();
-
-        void reloadGeometry();
+        void createPlanets(const double &deltaSeconds);
 
         void bindLighting();
+
+        void onExit();
 
     };
 }
