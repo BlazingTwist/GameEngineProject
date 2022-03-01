@@ -23,7 +23,7 @@ uniform vec3 ambient_light;
 struct LightData{
     int type;
     float range;
-    float spot_angle;
+    float spot_angle_cosine;
     float intensity;
     vec3 position;
     vec3 direction;
@@ -91,12 +91,12 @@ void main()
             diffuseColor += phongData.g * diffuseDot * lightData.color * lightData.intensity;
             specularColor += phongData.b * 8 * pow(specularDot, phongData.a * 255) * lightData.color * lightData.intensity;
         } else if (lightData.type == LIGHT_TYPE_SPOT){
-            // position, direction, range, spot_angle, color, intensity
+            // position, direction, range, spot_angle_cosine, color, intensity
             vec3 spotLightDirection = normalize(fragment.world_position - lightData.position);
             // here we're (ab-)using the fact that the dot product of two normalized vectors is the cosine of their angle
             float spotLightAngle = dot(lightData.direction, spotLightDirection);
             float spotLightDistance = length(fragment.world_position - lightData.position);
-            if (spotLightAngle > lightData.spot_angle && spotLightDistance <= lightData.range){
+            if (spotLightAngle > lightData.spot_angle_cosine && spotLightDistance <= lightData.range){
                 // 4 is the distanceFactor at 'distance == 0.05 * range'
                 float distanceFactor = min(0.01f / pow(spotLightDistance / lightData.range, 2), 4);
                 float diffuseDot = max(dot(-spotLightDirection, normal_vec), 0.0f);
