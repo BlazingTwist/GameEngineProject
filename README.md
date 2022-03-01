@@ -5,7 +5,7 @@
 * **Free fall Demo** - Mehrere Objekte befinden sich im Raum im freien Fall.
 * **Orbit Demo** - Zwei Objekte bewegen sich nach regeln von Newtons universaler Gravitation im Raum.
 * **Parallax Occlusion** - Darstellung des Parallax Occlusion Mappings an einer Holzwand.
-* **Light Demo** - Präsentation des SSBO-Buffer basierten Lichtsystems (frei Platzierung beliebig vieler Lichtquellen im Raum).
+* **Light Demo** - Präsentation des SSBO-Buffer basierten Lichtsystems (freie Platzierung beliebig vieler Lichtquellen im Raum).
 * **Collision State** - Objekte bewegen sich im Raum und können beschossen werden.
 
 # Tasks
