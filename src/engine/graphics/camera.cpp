@@ -130,4 +130,8 @@ namespace graphics {
         }
     }
 
+    glm::quat Camera::getRotationAsQuaternion() const {
+        return glm::quat_cast(lookAtMatrix);
+    }
+
 }
