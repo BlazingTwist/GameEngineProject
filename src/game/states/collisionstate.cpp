@@ -147,7 +147,7 @@ namespace gameState {
                                      graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
                                      graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())
                     ),
-                    components::PhysicsObject(direction, {position, position},angularVelocity)
+                    components::PhysicsObject(direction, {position, position}, angularVelocity)
             );
             meshRenderer.registerMesh(planetEntity);
             planetVec.push_back(planetEntity);
@@ -204,7 +204,7 @@ namespace gameState {
         initializeHotkeys();
         cameraControls.update(deltaMicroseconds);
 
-        if(bulletCoolDownSeconds > 0.0){
+        if (bulletCoolDownSeconds > 0.0) {
             bulletCoolDownSeconds -= deltaSeconds;
         }
         if (bulletCoolDownSeconds <= 0.0 && input::InputManager::isButtonPressed(input::MouseButton::LEFT)) {

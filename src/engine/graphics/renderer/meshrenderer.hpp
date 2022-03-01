@@ -52,7 +52,7 @@ namespace graphics {
         void update();
 
         void removeMesh(const entity::EntityReference *meshEntity);
-        
+
         void removeMesh(const components::Mesh &mesh);
 
         void present(unsigned int programID);

@@ -25,7 +25,7 @@ namespace gameState {
         // TODO if the pc is too slow for the target intervals, we're just building up time deficits that never get depleted
 
         auto timeUntilUpdate = targetUpdateInterval - std::chrono::duration_cast<microseconds>(now - lastUpdateTime).count();
-        if(timeUntilUpdate <= 0){
+        if (timeUntilUpdate <= 0) {
             timeUntilUpdate += targetUpdateInterval;
             lastUpdateTime = lastUpdateTime + microseconds(targetUpdateInterval);
 
@@ -40,7 +40,7 @@ namespace gameState {
                     }
                     currentGameState = gameStates.back();
                     currentGameState->onResume();
-                }else{
+                } else {
                     break;
                 }
             }

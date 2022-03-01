@@ -51,7 +51,7 @@ namespace gameState {
         std::vector<entity::EntityReference *> bulletVec;
 
         utils::SparseOctree<const entity::EntityReference *, 3, float> collisionTree;
-        
+
         double nextPlanetSpawnSeconds = 0.0;
         double bulletCoolDownSeconds = 0.0;
 

@@ -23,7 +23,7 @@ namespace entityV2 {
         template<typename T>
         [[nodiscard]] ComponentReference *getComponent() const {
             auto findResult = componentMap.find(std::type_index(typeid(T)));
-            if(findResult == componentMap.end()){
+            if (findResult == componentMap.end()) {
                 return nullptr;
             }
             return findResult->second;

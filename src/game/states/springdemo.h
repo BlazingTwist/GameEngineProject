@@ -36,17 +36,17 @@ namespace gameState {
         glm::vec3 ambientLightData;
         graphics::MeshRenderer meshRenderer;
 
-        entity::EntityReference* planetEntity = nullptr;
-        entity::EntityReference* crateEntity = nullptr;
-        entity::EntityReference* lightSource = nullptr;
-        
+        entity::EntityReference *planetEntity = nullptr;
+        entity::EntityReference *crateEntity = nullptr;
+        entity::EntityReference *lightSource = nullptr;
+
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;
 
         bool hotkey_reset_isDown = false;
         bool hotkey_mainState_isDown = false;
         bool hotkey_exit_isDown = false;
-        
+
         float planetVelocity = 0.0f;
 
         void initializeHotkeys();

@@ -39,13 +39,13 @@ namespace gameState {
 
         glm::vec3 ambientLightData;
         graphics::MeshRenderer meshRenderer;
-        
-        entity::EntityReference* xyPlaneEntity = nullptr;
-        entity::EntityReference* lightSource = nullptr;
+
+        entity::EntityReference *xyPlaneEntity = nullptr;
+        entity::EntityReference *lightSource = nullptr;
 
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;
-        
+
         bool hotkey_toggleTexture_isDown = false;
         bool hotkey_togglePhong_isDown = false;
         bool hotkey_toggleNormal_isDown = false;
@@ -59,7 +59,7 @@ namespace gameState {
         void loadShaders();
 
         void loadGeometry();
-        
+
         void bindLighting();
 
         void onExit();

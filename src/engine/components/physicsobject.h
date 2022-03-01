@@ -10,8 +10,11 @@ namespace components {
         PhysicsObject() {}
 
         explicit PhysicsObject(const double mass) : _mass(mass) {}
-        PhysicsObject(const double mass, const glm::vec3& velocity) : _mass(mass), _velocity(velocity){}
-        PhysicsObject(const glm::vec3& velocity, const math::AABB<3, float>& aabb, glm::vec3 &angularVelocity) :_velocity(velocity), _aabb(aabb), _angularVelocity(angularVelocity) {}
+
+        PhysicsObject(const double mass, const glm::vec3 &velocity) : _mass(mass), _velocity(velocity) {}
+
+        PhysicsObject(const glm::vec3 &velocity, const math::AABB<3, float> &aabb, glm::vec3 &angularVelocity) : _velocity(velocity), _aabb(aabb),
+                                                                                                                 _angularVelocity(angularVelocity) {}
 
         PhysicsObject(const glm::vec3 &velocity, const math::AABB<3, float> &aabb) : _velocity(velocity), _aabb(aabb) {}
 
