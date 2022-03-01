@@ -19,6 +19,6 @@ void main()
     gl_Position = world_to_camera_matrix * worldPosition;
 
     vertex.uv_coord = uv_coord;
-    vertex.normal_vec = normalize(vec3(object_to_world_matrix * vec4(normal_vec, 1.0f)));
+    vertex.normal_vec = normalize(vec3(mat3(object_to_world_matrix) * normal_vec));
     vertex.world_position = worldPosition.xyz;
 }
