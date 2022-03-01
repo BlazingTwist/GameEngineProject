@@ -46,18 +46,7 @@ namespace gameState {
     void FreeFallDemoState::loadGeometry() {
         meshRenderer.clear();
 
-        planetEntity = entity::EntityRegistry::getInstance().createEntity(
-            components::Transform(defaultPlanetPosition,
-                glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
-                defaultPlanetScale),
-            components::Mesh(utils::MeshLoader::get("models/sphere.obj"),
-                graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
-                graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())),
-            components::PhysicsObject(150'000.0, defaultPlanetVelocity)
-        );
-
-        meshRenderer.registerMesh(planetEntity);
-
+      
 
        
             lightSource = entity::EntityRegistry::getInstance().createEntity(
@@ -108,6 +97,37 @@ namespace gameState {
         cameraControls.bindCamera();;
         printControls();
     }
+    void FreeFallDemoState::createObjects(const double& deltaSeconds)
+    {
+
+        nextPlanetSpawnSeconds -= deltaSeconds;
+        if (nextPlanetSpawnSeconds <= 0) {
+            nextPlanetSpawnSeconds = 2.0;
+
+
+
+            std::random_device randomDevice;
+            std::mt19937 gen(randomDevice());
+            std::uniform_real_distribution<> positionDistribution(0, 9);
+
+
+            glm::vec3 position = glm::vec3(positionDistribution(gen), 15, positionDistribution(gen));
+
+          entity::EntityReference *planetEntity = entity::EntityRegistry::getInstance().createEntity(
+                components::Transform(position,
+                    glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
+                    defaultPlanetScale),
+                components::Mesh(utils::MeshLoader::get("models/sphere.obj"),
+                    graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
+                    graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())),
+                components::PhysicsObject(150'000.0, defaultPlanetVelocity)
+            );
+
+            meshRenderer.registerMesh(planetEntity);
+            planetVec.push_back(planetEntity);
+        }
+        }
+
 
     void FreeFallDemoState::update(const long long &deltaMicroseconds) {
         if (!hotkey_reset_isDown && input::InputManager::isKeyPressed(input::Key::Num1)) {
@@ -133,15 +153,14 @@ namespace gameState {
             onExit();
             return;
         }
-
-     
+   
         double deltaSeconds = (double) deltaMicroseconds / 1'000'000.0;
         double deltaSecondsSquared = deltaSeconds * deltaSeconds;
-        
+
      
         
         entity::EntityRegistry::getInstance().execute(
-            [deltaSeconds, deltaSecondsSquared](const entity::EntityReference* entity, components::Transform transform,components::PhysicsObject phys)
+            [deltaSeconds, deltaSecondsSquared,this]( const entity::EntityReference* entity, components::Transform transform,components::PhysicsObject phys)
                  {
          
                              double acc =(9.81)/( deltaSecondsSquared);
@@ -152,22 +171,32 @@ namespace gameState {
                            
                             
                             double grenze = transform.getPosition().y;
-                            if (grenze > (-15))
+                            if (grenze > (-20)) {
                                 transform.setPosition(transform.getPosition() + phys._velocity);
+                                entity::EntityRegistry::getInstance().addOrSetComponent(entity, transform);
+                                entity::EntityRegistry::getInstance().addOrSetComponent(entity, phys);
+                            }
                                
                             else {
-                                transform.setPosition(defaultPlanetPosition);
-                            
-                               
-                                    if (phys._velocity.y<-2)
-                                    phys._velocity=defaultPlanetVelocity;
-                                  }
+                                std::cout << "hlleo";
+                                for (int i=0; i<planetVec.size();i++)
+                                {
 
-                            entity::EntityRegistry::getInstance().addOrSetComponent(entity, transform);
-                            entity::EntityRegistry::getInstance().addOrSetComponent(entity, phys);
+                                    if (planetVec[i] == entity) {
+                                        entity::EntityReference* storedPlanet = planetVec[i];
+                                        meshRenderer.removeMesh(storedPlanet);
+                                        entity::EntityRegistry::getInstance().eraseEntity(planetVec[i]);
+                                        planetVec.erase(planetVec.begin() + i);
+                                        return;
+                                    }
+
+                                }
+
+                            }
                                 
                     });
-           
+       
+        createObjects(deltaMicroseconds);
         meshRenderer.update();
     }
     

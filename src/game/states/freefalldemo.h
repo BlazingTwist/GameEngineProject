@@ -46,9 +46,10 @@ namespace gameState {
         graphics::MeshRenderer meshRenderer;
         
         glm::vec3 ambientLightData;
-        
-        
 
+       
+        
+        std::vector< entity::EntityReference*>planetVec;
         entity::EntityReference* lightSource = nullptr;
         graphics::Sampler* sampler = nullptr;
         entity::EntityReference* planetEntity = nullptr;
@@ -57,6 +58,7 @@ namespace gameState {
         graphics::Program program = graphics::Program();
         GLint glsl_ambient_light = 0;
 
+        double nextPlanetSpawnSeconds = 0.0;
         bool hotkey_reset_isDown = false;
         bool hotkey_mainState_isDown = false;
         bool hotkey_exit_isDown = false;
@@ -78,6 +80,9 @@ namespace gameState {
         void bindCamera();
         
         void updateSpherePosition();
+
+        void createObjects(const double& deltaSeconds);
+
         void onExit();
     };
 }
