@@ -139,13 +139,13 @@ namespace gameState {
         }
 
         createObjects(deltaSeconds);
+        
         meshRenderer.update();
+        graphics::LightManager::LightSystem(registry).execute();
     }
 
 
     void FreeFallDemoState::draw(const long long &deltaMicroseconds) {
-
-
         meshRenderer.present(program.getID());
     }
 
