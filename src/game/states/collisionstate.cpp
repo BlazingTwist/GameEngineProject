@@ -3,9 +3,7 @@
 
 namespace gameState {
 
-    glm::vec3 xAxis(0, -1, 0);
-    glm::mat4 rota(glm::rotate(glm::identity<glm::mat4>(), 1.0f, xAxis));
-    std::vector<int> ids;
+   
     static graphics::Sampler* sampler;
     double timer2 = 0;
     static constexpr auto defaultLightRange = 100.0f;
@@ -13,7 +11,10 @@ namespace gameState {
     double timer = 0;
     glm::vec3 curserpos;
     int counter = 0;
-
+    static constexpr auto defaultPlanetScale = glm::vec3(1.0f, 1.0f, 1.0f);
+    static constexpr auto defaultAngularVelocity = 10;
+    static constexpr auto defaultAngularVelocityBullet = 0;
+    utils::SparseOctree<const entity::EntityReference*, 3, double> tree(1.f);
 
     static void printControls() {
         spdlog::info("Spring Demo Controls:");
@@ -58,26 +59,33 @@ namespace gameState {
         for (int i = 0; i < planetVec.size(); i++)
         {
             Planet* planet = &planetVec[i];
-            if (planet->planetID != i) {
-                planet->planetID = i;
-            }
-            planet->planetID = meshRenderer.draw(planet->sphereMeshes,
-                graphics::Texture2DManager::get("textures/planet1.png", *sampler),
-                graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler),
-                glm::translate(glm::identity<glm::mat4>(), planet->startposition));
             
-            
+
+            planet->planetID = entity::EntityRegistry::getInstance().createEntity(
+                components::Transform(planet->startposition,
+                    glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
+                    defaultPlanetScale),
+                components::Mesh(meshRenderer.requestNewMesh(),
+                    utils::MeshLoader::get("models/sphere.obj"),
+                    graphics::Texture2DManager::get("textures/planet1.png", *sampler),
+                    graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler)),
+                components::PhysicsObject(planet->direction,defaultAngularVelocity, { planet->startposition, planet->startposition })
+                );
 
          
         }
         for (int i = 0; i < bulletVec.size(); i++) {
             Bullet* bullet = &bulletVec[i];
-            int j = planetVec.size() + i-1;
-            bullet->bulletID = j;
-            bullet->bulletID = meshRenderer.draw(bullet->sphereMeshes,
-                graphics::Texture2DManager::get("textures/planet1.png", *sampler),
-                graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler),
-                glm::translate(glm::identity<glm::mat4>(), bullet->bullPos));
+
+            bullet->bulletID = entity::EntityRegistry::getInstance().createEntity(
+                components::Transform(bullet->bullPos,
+                    glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
+                    defaultPlanetScale),
+                components::Mesh(meshRenderer.requestNewMesh(),
+                    utils::MeshLoader::get("models/sphere.obj"),
+                    graphics::Texture2DManager::get("textures/planet1.png", *sampler),
+                    graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler)));
+            components::PhysicsObject(bullet->bullDirection,defaultAngularVelocityBullet, { bullet->bullPos, bullet->bullPos });
         }
 
     }
@@ -86,10 +94,18 @@ namespace gameState {
         if ( planetVec.size()>0) {
             Planet *planet = &planetVec.back();
             
-            planet->planetID = meshRenderer.draw(planet->sphereMeshes,
-            graphics::Texture2DManager::get("textures/planet1.png", *sampler),
-            graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler),
-            glm::translate(glm::identity<glm::mat4>(), planet->startposition));
+            planet->planetID = entity::EntityRegistry::getInstance().createEntity(
+                components::Transform(planet->startposition,
+                    glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
+                    defaultPlanetScale),
+                components::Mesh(meshRenderer.requestNewMesh(),
+                    utils::MeshLoader::get("models/sphere.obj"),
+                    graphics::Texture2DManager::get("textures/planet1.png", *sampler),
+                    graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler)),
+                components::PhysicsObject(planet->direction, defaultAngularVelocity, { planet->startposition, planet->startposition })
+
+            );
+
             counter++;
         }
     }
@@ -97,35 +113,40 @@ namespace gameState {
    
     void CollisionState::createBullet(const long long int& deltaMicroseconds) {
  
-        math::AABB<3, double> aabb;
         
-        Bullet bullet = { planetVec.size() + bulletVec.size(),(graphics::Mesh(utils::MeshLoader::get("models/sphere.obj"))),cameraControls.camera.getPosition(),curserpos,aabb };
+        
+        Bullet bullet = { nullptr,cameraControls.camera.getPosition(),curserpos };
         bullet.bullDirection  = curserpos - cameraControls.camera.getPosition();
-        std::cout << bullet.bullPos.x;
+        std::cout << bullet.bullDirection.x;
         
-        //spdlog::info(curserpos.x);
 
-        glm::vec3 min = { bullet.bullPos.x,bullet.bullPos.y,bullet.bullPos.z };
-        glm::vec3 max = { bullet.bullPos.x,bullet.bullPos.y,bullet.bullPos.z };
-         
 
-            bulletVec.push_back(bullet);
+            
           
             spdlog::info("wie oft wird das per mausklick gemacht?");
-            bullet.bulletID = meshRenderer.draw(bullet.sphereMeshes,
-                graphics::Texture2DManager::get("textures/planet1.png", *sampler),
-                graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler),
-                glm::translate(glm::identity<glm::mat4>(), bullet.bullPos));
-            counter++;
-                
-       
+
+            bullet.bulletID = entity::EntityRegistry::getInstance().createEntity(
+                components::Transform(bullet.bullPos,
+                    glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
+                    defaultPlanetScale),
+                components::Mesh(meshRenderer.requestNewMesh(),
+                    utils::MeshLoader::get("models/sphere.obj"),
+                    graphics::Texture2DManager::get("textures/planet1.png", *sampler),
+                    graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler)),
+                components::PhysicsObject(bullet.bullDirection, 0, { bullet.bullPos,bullet.bullPos }));
+              
+            bulletVec.push_back(bullet);
+         
     }
 
     void CollisionState::initializeScene() {
         cameraControls.initializeScene();
         lightData.light_range = defaultLightRange;
         lightData.light_intensity = defaultLightIntensity;
-        
+
+        entity::EntityRegistry& registry = entity::EntityRegistry::getInstance();
+
+       
         srand(time(NULL));
         //randomNumbers used for random spawnPoints need to be adapted if more planets are needed
         for (int i = 0; i <100; i++)
@@ -145,39 +166,6 @@ namespace gameState {
         glUniform3fv(glsl_ambient_light, 1, glm::value_ptr(ambientLightData));
 
     }
-
-    void CollisionState::updateBulletPos(const long long int& deltaMicroseconds)
-    {
-        double deltaSeconds = (double)deltaMicroseconds / 1'000'000.0;
-        for (int i = 0; i < bulletVec.size();i++) {
-            Bullet *bullet = &bulletVec[i];
-
-            
-            bullet->bullPos.x += bullet->bullDirection.x * deltaSeconds;
-            bullet->bullPos.y += bullet->bullDirection.y * deltaSeconds;
-            bullet->bullPos.z += bullet->bullDirection.z * deltaSeconds;
-            glm::vec3 min = { bullet->bullPos.x,bullet->bullPos.y,bullet->bullPos.z };
-            glm::vec3 max = { bullet->bullPos.x,bullet->bullPos.y,bullet->bullPos.z };
-            
-            bullet->aabb.min = min;
-            bullet->aabb.max = max;
-            
-           // std::cout <<bullet->aabb.min.x;
-
-            if (bullet->bullPos.x < -50 || bullet->bullPos.x>100) {
-                bullet->bullDirection.x = -bullet->bullDirection.x;
-
-            }
-            if (bullet->bullPos.y < -50 || bullet->bullPos.y>100) {
-                bullet->bullDirection.y = -bullet->bullDirection.y;
-            }
-            if (bullet->bullPos.z < -50 || bullet->bullPos.z>100) {
-                bullet->bullDirection.z = -bullet->bullDirection.z;
-            }
-          meshRenderer.setTransform(bullet->bulletID, glm::translate(glm::identity<glm::mat4>(), bullet->bullPos));
-
-        }
-    }
   
     CollisionState::CollisionState() :
         cameraControls(graphics::Camera(90.0f, 0.1f, 300.0f), glm::vec3(0.0f, 0.0f, -7.0f), 0.0f, 0.0f, 0.0f),
@@ -189,11 +177,9 @@ namespace gameState {
             defaultLightIntensity
         )),
 
-        meshRenderer(graphics::MeshRenderer()),
-        sphereMash(graphics::Mesh(utils::MeshLoader::get("models/sphere.obj")))
+        meshRenderer(graphics::MeshRenderer())
+
     {
-       
-        spdlog::info("sief");
         sampler = new graphics::Sampler(graphics::Sampler::Filter::LINEAR, graphics::Sampler::Filter::LINEAR,
             graphics::Sampler::Filter::LINEAR, graphics::Sampler::Border::MIRROR);
        
@@ -208,52 +194,8 @@ namespace gameState {
         cameraControls.bindCamera();;
     }
   
-    void CollisionState::updatePos(const long long int& deltaMicroseconds)
+  
 
-    {
-        double deltaSeconds = (double)deltaMicroseconds / 1'000'000.0;
-         for (int i = 0; i < planetVec.size(); i++)
-        {
-             
-                 // spdlog::info(planetVec[i].planetID != NULL);
-                 Planet* planet = &planetVec[i];
-
-                 planet->startposition.x = planet->startposition.x + planet->direction.x * deltaSeconds  ;
-                 planet->startposition.y = planet->startposition.y + planet->direction.y * deltaSeconds ;
-                 planet->startposition.z = planet->startposition.z + planet->direction.z * deltaSeconds ;
-
-                 //part of AABB collision detection
-                 planet->aabb.min.x = planet->startposition.x - 10;
-                 planet->aabb.max.x = planet->startposition.x +10      ;
-                 planet->aabb.min.y = planet->startposition.y -10;
-                 planet->aabb.max.y = planet->startposition.y +10;
-                 planet->aabb.min.z = planet->startposition.z -10.f;
-                 planet->aabb.max.z = planet->startposition.z +10;
-
-                 glm::vec3 ursprung(-planet->startposition.x, -planet->startposition.y, -planet->startposition.z);
-                 glm::vec3 directRot = glm::normalize(glm::vec3(-planet->direction.x, -planet->direction.y, -planet->direction.z));
-
-                 planet->angularVelocity = planet->angularVelocity + deltaSeconds;
-
-                 //(glm::translate(glm::identity<glm::mat4>(), ursprung)
-                 meshRenderer.setTransform(planet->planetID, (glm::translate(glm::rotate(glm::identity<glm::mat4>(),
-                     planet->angularVelocity, planet->direction), planet->startposition)));
-                 //Box for planets to stay in, probably better to change the scene.
-                 if (planet->startposition.x > 40 || planet->startposition.x <= 0) {
-                     planet->direction.x = -planet->direction.x;
-                     
-
-                 }
-                 else if (planet->startposition.y > 40 || planet->startposition.y <= 0) {
-                     planet->direction.y = -planet->direction.y;
-
-
-                 }
-                 else if (planet->startposition.z > 40 || planet->startposition.z <= 0) {
-                     planet->direction.z = -planet->direction.z;
-                 }
-        }
-    }
 
 
     void CollisionState::createPlanets(const long long& deltaMicroseconds)
@@ -265,14 +207,9 @@ namespace gameState {
          
             glm::vec3 pos(randomArray[counter * 3], randomArray[counter * 3 + 1], randomArray[counter * 3 + 2]);
             glm::vec3 direct(randomArray2[counter * 3], randomArray2[counter * 3 + 1], randomArray2[counter * 3 + 2]);
-            glm::vec3 min(pos.x - 0.1, pos.y - 0.1, pos.z - 0.1);
-            glm::vec3 max(pos.x + 0.1, pos.y + 0.1, pos.z + 0.1);
             float why = randomArray[counter];
             float angVel = glm::radians(why);
-
-            Planet planet = { planetVec.size()+bulletVec.size(),(graphics::Mesh(utils::MeshLoader::get("models/sphere.obj"))),pos,direct,0.f,angVel,{planet.aabb} }; 
-            planet.aabb.min = min;
-            planet.aabb.max = max;
+            Planet planet = { nullptr ,pos,direct,0.f,angVel };
             planetVec.push_back(planet);
             loadGeometry();
             
@@ -280,67 +217,87 @@ namespace gameState {
         }
     }
     void CollisionState::update(const long long& deltaMicroseconds) {
-            double deltaSeconds = (double)deltaMicroseconds / 1'000'000.0;
-            if (!hotkey_reset_isDown && input::InputManager::isKeyPressed(input::Key::Num1)) {
-                spdlog::info("resetting scene");
-                initializeScene();
-                bindLighting();
-                cameraControls.bindCamera();
-            }
+        double deltaSeconds = (double)deltaMicroseconds / 1'000'000.0;
+        if (!hotkey_reset_isDown && input::InputManager::isKeyPressed(input::Key::Num1)) {
+            spdlog::info("resetting scene");
+            initializeScene();
+            bindLighting();
+            cameraControls.bindCamera();
+        }
 
-            if (!hotkey_mainState_isDown && input::InputManager::isKeyPressed(input::Key::Num2)) {
-                spdlog::info("main state hotkey pressed");
-                gameState::GameStateManager::getInstance().startGameState(new gameState::MainGameState());
-                return;
-            }
+        if (!hotkey_mainState_isDown && input::InputManager::isKeyPressed(input::Key::Num2)) {
+            spdlog::info("main state hotkey pressed");
+            gameState::GameStateManager::getInstance().startGameState(new gameState::MainGameState());
+            return;
+        }
 
-            if (!hotkey_exit_isDown && input::InputManager::isKeyPressed(input::Key::Num3)) {
-                spdlog::info("exiting collisionstate state");
-                _isFinished = true;
-                return;
-            }
+        if (!hotkey_exit_isDown && input::InputManager::isKeyPressed(input::Key::Num3)) {
+            spdlog::info("exiting collisionstate state");
+            _isFinished = true;
+            return;
+        }
 
-            timer = timer + (deltaSeconds);
-           
-            utils::SparseOctree<Planet, 3, double> tree(1.f);
-            for (int i = 0; i < planetVec.size(); i++) {
-                Planet *planet = &planetVec[i];
-                tree.insert(planet->aabb, *planet);
-
-            }
-            for (Bullet bullet : bulletVec) {
-
-                TreeProcessor treeProc(bullet);
-                if (planetVec.size() > 0) {
-                    tree.traverse(treeProc);
-                }
-                tree.clear();
-                for (int i = 0; i < treeProc.fits.size(); i++)
-                {
+        timer = timer + (deltaSeconds);
 
 
-                    for (int j = 0; j < planetVec.size(); j++)
-                    {
-                        if (treeProc.fits[i].planetID == planetVec[j].planetID) {
-                            std::cout << planetVec[j].planetID << " got deleted";
-                            planetVec.erase(planetVec.begin() + j);
-//                            std::cout << planetVec[j].planetID << " got deleted";
-                            ids.push_back(j);
-                            j--;    
-                            meshRenderer.clear();
-                            reloadGeometry();
-                         
-                        }
+        entity::EntityRegistry::getInstance().execute(
+            [deltaSeconds](const entity::EntityReference* entity, components::Transform transform,
+                components::PhysicsObject phys) {
+                    
 
+                    spdlog::info(transform.getPosition().x);
+                    transform.setPosition(transform.getPosition() + (phys._velocity) * (float)deltaSeconds);
+                    if (entity::EntityRegistry::getInstance().getComponentData<components::PhysicsObject>(entity).value()._angularVelocity != 0) {
+                        tree.insert(phys._aabb, entity);
+
+
+                        transform.setRotation(transform.getPosition() + glm::vec3(12,22,7));
                     }
-                  
-                }  treeProc.fits.clear();
-    
+                    phys._aabb.min = glm::vec3(transform.getPosition().x - 1, transform.getPosition().y - 1, transform.getPosition().z - 1);
+                    phys._aabb.max = glm::vec3(transform.getPosition().x + 1, transform.getPosition().y + 1, transform.getPosition().z + 1);
+                    if (phys._velocity.x < -40 || phys._velocity.x>40)
+                        phys._velocity.x = -phys._velocity.x;
+                    if (phys._velocity.y < -40 || phys._velocity.y>40)
+                        phys._velocity.y = -phys._velocity.y;
+                    if (phys._velocity.z < -40 || phys._velocity.z>40)
+                        phys._velocity.z = -phys._velocity.z;
+                    std::cout << phys._aabb.min.x;
+
+                    entity::EntityRegistry::getInstance().addOrSetComponent(entity, transform);
+                    entity::EntityRegistry::getInstance().addOrSetComponent(entity, phys);
+                    if (entity::EntityRegistry::getInstance().getComponentData<components::PhysicsObject>(entity).value()._angularVelocity != 0) {
+                        tree.insert(phys._aabb, entity);
+                        
+                    }
+
+            });
+
+        for (int i = 0; i < bulletVec.size(); i++)
+        {
+            Bullet* bullet = &bulletVec[i];
+            if (entity::EntityRegistry::getInstance().getComponentData<components::PhysicsObject>(bullet->bulletID).value()._aabb.min.x != NULL) {
+
+                //auto aabb = entity::EntityRegistry::getInstance().getComponentData<components::PhysicsObject>(bullet->bulletID).value()._aabb;
+                TreeProcessor treeProc({ entity::EntityRegistry::getInstance().getComponentData<components::PhysicsObject>(bullet->bulletID).value()._aabb.min,
+                    entity::EntityRegistry::getInstance().getComponentData<components::PhysicsObject>(bullet->bulletID).value()._aabb.max });
+                if (planetVec.size() > 0)
+                   // std::cout << "pla";
+                tree.traverse(treeProc);
             }
-            //draw(deltaMicroseconds);
+        }
+        tree.clear();
+    
+                //entity::EntityRegistry::getInstance().getComponentData( const( planet->planetID ));
+               
+
+           
+                // tree.remove(aabb, planet.planetID);
+                //tree.clear();
+               
+                //reeProc.fits.clear();
+    
+           
         createPlanets(deltaMicroseconds);
-        updatePos( deltaMicroseconds);
-        updateBulletPos(deltaMicroseconds);
         initializeHotkeys();
         cameraControls.update(deltaMicroseconds);
         static constexpr float lightRangeStep = 0.1f;
@@ -370,9 +327,22 @@ namespace gameState {
     }
     
     void CollisionState::draw(const long long& deltaMicroseconds) {
+        auto& registry = entity::EntityRegistry::getInstance();
+        registry.execute([this, &registry](const entity::EntityReference* entity, components::Mesh mesh, components::Transform transform) {
+            bool meshChanged = mesh.hasAnyChanges();
+            bool transformChanged = transform.hasTransformChanged();
+            meshRenderer.draw(mesh, transform);
+            if (meshChanged) {
+                registry.addOrSetComponent(entity, mesh);
+            }
+            if (transformChanged) {
+                registry.addOrSetComponent(entity, transform);
+            }
+            });
+
         meshRenderer.present(program.getID());
-        
     }
+
     
     void CollisionState::onResume() {
         printControls();

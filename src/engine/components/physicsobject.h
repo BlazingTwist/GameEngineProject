@@ -11,10 +11,14 @@ namespace components {
 
         PhysicsObject(const double mass) : _mass(mass) {}
 
+        PhysicsObject(const glm::vec3& velocity ,const double angularVelocity, const math::AABB <3, double>& aabb ) : _velocity(velocity), _angularVelocity(angularVelocity), _aabb(aabb) {}
+
         PhysicsObject(const double mass, const glm::vec3 &velocity) : _mass(mass), _velocity(velocity) {}
 
         double _mass;
         glm::vec3 _velocity;
+        double _angularVelocity;
+        math::AABB<3, double> _aabb;
 
         class CrossObjectGravitySystem {
         public:

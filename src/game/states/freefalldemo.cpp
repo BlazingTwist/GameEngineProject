@@ -3,13 +3,17 @@
 namespace gameState {
     static constexpr auto defaultLightRange = 100.0f;
     static constexpr auto defaultLightIntensity = 0.75f;
-
+    static float gravConstant = 9.81f;
     static constexpr auto defaultPlanetPosition = glm::vec3(0.0f, 3.5f, 0.0f);
     static constexpr auto defaultPlanetScale = glm::vec3(1.0f, 1.0f, 1.0f);
-    static constexpr auto defaultPlanetVelocity = glm::vec3(-2.0f, -0.5f, 0.0f);
-    static graphics::Sampler* sampler;
+    static constexpr auto defaultPlanetVelocity = glm::vec3(0.0, -0.5f, 0.0f);
+    
     static void printControls() {
-        spdlog::info("Free Fall Demo Controls:");
+        spdlog::info("Orbit Demo Controls:");
+        spdlog::info("- WASD + EQ = Camera Movement");
+        spdlog::info("- Mouse = Camera Yaw/Pitch");
+        spdlog::info("- R/F = increase / decrease light range");
+        spdlog::info("- T/G = increase / decrease light intensity");
         spdlog::info("- press [1] to reset scene");
         spdlog::info("- press [2] to start a new MainGameState");
         spdlog::info("- press [3] to exit this state");
@@ -50,9 +54,9 @@ namespace gameState {
                 utils::MeshLoader::get("models/sphere.obj"),
                 graphics::Texture2DManager::get("textures/planet1.png", *sampler),
                 graphics::Texture2DManager::get("textures/Planet1_phong.png", *sampler)),
-            components::PhysicsObject(150'000.0, defaultPlanetVelocity)
+            components::FreeFallComponent(9.81f,0)
         );
-    const utils::MeshData::Handle sphereData = utils::MeshLoader::get("models/sphere.obj");
+   
 }
     void FreeFallDemoState::initializeScene() {
       
@@ -67,9 +71,9 @@ namespace gameState {
         planetTransform.setPosition(defaultPlanetPosition);
         registry.addOrSetComponent(planetEntity, planetTransform);
 
-        auto planetPhysicsObject = registry.getComponentData<components::PhysicsObject>(planetEntity).value();
-        planetPhysicsObject._velocity = defaultPlanetVelocity;
-        registry.addOrSetComponent(planetEntity, planetPhysicsObject);
+        auto planetFreeFall = registry.getComponentData<components::FreeFallComponent>(planetEntity).value();
+        //planetFreeFall._velocity = defaultPlanetVelocity;
+        registry.addOrSetComponent(planetEntity, planetFreeFall);
     }
 
     void FreeFallDemoState::bindLighting() {
@@ -80,7 +84,7 @@ namespace gameState {
   
 
     FreeFallDemoState::FreeFallDemoState() :
-        cameraControls(graphics::Camera(90.0f, 0.1f, 300.0f), glm::vec3(0.0f, 0.0f, -7.0f), 0.0f, 0.0f, 0.0f),
+        cameraControls(graphics::Camera(90.0f, 0.1f, 2000.0f), glm::vec3(0.0f, 0.0f, -15.0f), 0.0f, 0.0f, 0.0f),
         ambientLightData({ 1.4f, 1.4f, 1.4f }),
         lightData(graphics::LightData::point(
             glm::vec3(0.0f, 0.0f, 0.0f),
@@ -143,40 +147,48 @@ namespace gameState {
         static float gravConstant = 9.81f;
         double deltaSeconds = (double) deltaMicroseconds / 1'000'000.0;
         double deltaSecondsSquared = deltaSeconds * deltaSeconds;
-       // double velocityGain =gravConstant * deltaSeconds;
-
-      //  double accelerationDistance = sphereAcceleration * deltaSecondsSquared;
-        //double totalDistance = (sphereVelocity * deltaSeconds) + accelerationDistance;
-     
+        
      
         
         entity::EntityRegistry::getInstance().execute(
-            [deltaSeconds, deltaSecondsSquared](const entity::EntityReference* entity2, components::Transform transform2, components::PhysicsObject phys2) {
-                entity::EntityRegistry::getInstance().execute(
-                    [entity2, transform2, phys2, deltaSeconds, deltaSecondsSquared](const entity::EntityReference* entity,
-                        components::Transform transform,
-                        components::PhysicsObject phys) {
-                            if (entity->getReferenceID() == entity2->getReferenceID()) {
-                                return;
-                            }
-                            
-                            glm::vec3 aToB = transform2.getPosition() - transform.getPosition();
-                            glm::vec3 aToBNormal = glm::normalize(aToB);
-                            float distanceSquared = glm::dot(aToB, aToB);
-                            double acceleration = gravConstant;
-                            double velocityGain = acceleration * deltaSeconds;
-                            double accelerationDistance = acceleration * deltaSecondsSquared / 2;
-                            transform.setPosition(
-                                transform.getPosition() + (phys._velocity * (float)deltaSeconds) + (aToBNormal * (float)accelerationDistance));
-                            phys._velocity = phys._velocity + (aToBNormal * (float)velocityGain);
-                            entity::EntityRegistry::getInstance().addOrSetComponent(entity, transform);
-                            entity::EntityRegistry::getInstance().addOrSetComponent(entity, phys);
-                    });
-            });
+            [deltaSeconds, deltaSecondsSquared](const entity::EntityReference* entity, components::Transform transform,
+                components::FreeFallComponent gravity) {
+                   
+                        
+                    
+                             double initialspeed = 0;
+                             double acc =(9.81)/( deltaSecondsSquared);
 
-        components::Transform planetPosition = entity::EntityRegistry::getInstance().getComponentData<components::Transform>(planetEntity).value();
-        lightData.light_position = planetPosition.getPosition();
-        bindLighting();
+                             
+                             double velocityGain = acc * deltaSeconds/1000;
+                             
+
+                             double accelerationDistance = acc * deltaSecondsSquared / 2/50;
+                             
+                            std::cout << accelerationDistance;
+                          
+                            glm::vec3 velocityVec(0,-1,0);
+                            gravity.velocity = gravity.velocity + velocityGain * deltaSeconds;
+                            double grenze = transform.getPosition().y;
+                            if (grenze > (-15))
+                                transform.setPosition(transform.getPosition() + (gravity.velocity * velocityVec)); //transform.getPosition() + (float)gravity._velocity * (float)deltaSeconds
+                                //gravity._velocity=glm::vec3 ( gravity._velocity.x,gravity._velocity.y - accelerationDistance,gravity._velocity.z);
+                            else {
+                                transform.setPosition(defaultPlanetPosition);
+                                //gravity.velocity = 0;
+                                if (gravity.velocity > 1)
+                                    gravity.velocity = 0;
+                            }
+
+                            std::cout << transform.getPosition().y;
+                            entity::EntityRegistry::getInstance().addOrSetComponent(entity, transform);
+                            entity::EntityRegistry::getInstance().addOrSetComponent(entity, gravity);
+                    });
+           
+
+        //components::Transform planetPosition = entity::EntityRegistry::getInstance().getComponentData<components::Transform>(planetEntity).value();
+        //lightData.light_position = planetPosition.getPosition();
+        //bindLighting();
     }
     
 
