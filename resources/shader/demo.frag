@@ -20,14 +20,20 @@ layout(location = 0) out vec4 out_color;
 uniform vec3 camera_position;
 uniform vec3 ambient_light;
 
-// TODO figure out what to do about multiple light sources (ideally with variable length - "Shader Storage Buffer Objects" ? )
-uniform int light_type;
-uniform vec3 light_position;
-uniform vec3 light_direction;
-uniform float light_range;
-uniform float light_spot_angle;
-uniform vec3 light_color;
-uniform float light_intensity;
+struct LightData{
+    int type;
+    float range;
+    float spot_angle;
+    float intensity;
+    vec3 position;
+    vec3 direction;
+    vec3 color;
+};
+
+layout(binding = 4) buffer LightBuffer{
+    uint light_count;
+    LightData allLights[];
+};
 
 void main()
 {
@@ -76,39 +82,41 @@ void main()
 
     // TODO light bounces? occlusion?
     // TODO rewrite x/distance stuff to use (1+(x/distance)) instead of clamping (?).
-    if (light_type == LIGHT_TYPE_DIRECTIONAL){
-        // direction, color, intensity
-
-        float diffuseDot = max(dot(-light_direction, normal_vec), 0.0f);
-        float specularDot = max(dot(reflect(light_direction, normal_vec), vec_to_eye_normalized), 0.0f);
-        diffuseColor = phongData.g * diffuseDot * light_color * light_intensity;
-        specularColor = phongData.b * 8 * pow(specularDot, phongData.a * 255) * light_color * light_intensity;
-
-    } else if (light_type == LIGHT_TYPE_SPOT){
-        // position, direction, range, spot_angle, color, intensity
-        vec3 spotLightDirection = normalize(fragment.world_position - light_position);
-        // here we're (ab-)using the fact that the dot product of two normalized vectors is the cosine of their angle
-        float spotLightAngle = dot(light_direction, spotLightDirection);
-        float spotLightDistance = length(fragment.world_position - light_position);
-        if (spotLightAngle > light_spot_angle && spotLightDistance <= light_range){
-            float distanceFactor = min(0.01f / pow(spotLightDistance / light_range, 2), 4);// 4 is the distanceFactor at 'distance = 0.05 * range'
-            float diffuseDot = max(dot(-spotLightDirection, normal_vec), 0.0f);
-            float specularDot = max(dot(reflect(spotLightDirection, normal_vec), vec_to_eye_normalized), 0.0f);
-            diffuseColor = phongData.g * diffuseDot * light_color * light_intensity * distanceFactor;
-            specularColor = phongData.b * 8 * pow(specularDot, phongData.a * 255) * light_color * light_intensity * distanceFactor;
-        }
-
-    } else if (light_type == LIGHT_TYPE_POINT){
-        // position, range, color, intensity
-        // light intensity should diminish proportionally to `1 / distance_squared`
-        vec3 pointLightDirection = normalize(fragment.world_position - light_position);
-        float pointLightDistance = length(fragment.world_position - light_position);
-        if (pointLightDistance <= light_range){
-            float distanceFactor = min(0.01f / pow(pointLightDistance / light_range, 2), 4);// 4 is the distanceFactor at 'distance = 0.05 * range'
-            float diffuseDot = max(dot(-pointLightDirection, normal_vec), 0.0f);
-            float specularDot = max(dot(reflect(pointLightDirection, normal_vec), vec_to_eye_normalized), 0.0f);
-            diffuseColor = phongData.g * diffuseDot * light_color * light_intensity * distanceFactor;
-            specularColor = phongData.b * 8 * pow(specularDot, phongData.a * 255) * light_color * light_intensity * distanceFactor;
+    for (int lightIndex = 0; lightIndex < light_count; lightIndex++){
+        LightData lightData = allLights[lightIndex];
+        if (lightData.type == LIGHT_TYPE_DIRECTIONAL){
+            // direction, color, intensity
+            float diffuseDot = max(dot(-lightData.direction, normal_vec), 0.0f);
+            float specularDot = max(dot(reflect(lightData.direction, normal_vec), vec_to_eye_normalized), 0.0f);
+            diffuseColor += phongData.g * diffuseDot * lightData.color * lightData.intensity;
+            specularColor += phongData.b * 8 * pow(specularDot, phongData.a * 255) * lightData.color * lightData.intensity;
+        } else if (lightData.type == LIGHT_TYPE_SPOT){
+            // position, direction, range, spot_angle, color, intensity
+            vec3 spotLightDirection = normalize(fragment.world_position - lightData.position);
+            // here we're (ab-)using the fact that the dot product of two normalized vectors is the cosine of their angle
+            float spotLightAngle = dot(lightData.direction, spotLightDirection);
+            float spotLightDistance = length(fragment.world_position - lightData.position);
+            if (spotLightAngle > lightData.spot_angle && spotLightDistance <= lightData.range){
+                // 4 is the distanceFactor at 'distance == 0.05 * range'
+                float distanceFactor = min(0.01f / pow(spotLightDistance / lightData.range, 2), 4);
+                float diffuseDot = max(dot(-spotLightDirection, normal_vec), 0.0f);
+                float specularDot = max(dot(reflect(spotLightDirection, normal_vec), vec_to_eye_normalized), 0.0f);
+                diffuseColor += phongData.g * diffuseDot * lightData.color * lightData.intensity * distanceFactor;
+                specularColor += phongData.b * 8 * pow(specularDot, phongData.a * 255) * lightData.color * lightData.intensity * distanceFactor;
+            }
+        } else if (lightData.type == LIGHT_TYPE_POINT){
+            // position, range, color, intensity
+            // light intensity should diminish proportionally to `1 / distance_squared`
+            vec3 pointLightDirection = normalize(fragment.world_position - lightData.position);
+            float pointLightDistance = length(fragment.world_position - lightData.position);
+            if (pointLightDistance <= lightData.range){
+                // 4 is the distanceFactor at 'distance == 0.05 * range'
+                float distanceFactor = min(0.01f / pow(pointLightDistance / lightData.range, 2), 4);
+                float diffuseDot = max(dot(-pointLightDirection, normal_vec), 0.0f);
+                float specularDot = max(dot(reflect(pointLightDirection, normal_vec), vec_to_eye_normalized), 0.0f);
+                diffuseColor = phongData.g * diffuseDot * lightData.color * lightData.intensity * distanceFactor;
+                specularColor = phongData.b * 8 * pow(specularDot, phongData.a * 255) * lightData.color * lightData.intensity * distanceFactor;
+            }
         }
     }
 
