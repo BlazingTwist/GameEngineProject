@@ -100,9 +100,7 @@ namespace gameState {
             const glm::vec3 &camForward = cameraControls.camera.forwardVector();
             const glm::quat camRotation = cameraControls.camera.getRotationAsQuaternion();
             entity::EntityReference *newLightEntity = entity::EntityRegistry::getInstance().createEntity(
-                    components::Light(
-                            graphics::LightData::spot(position, camForward, 50.0f, glm::cos(glm::radians(22.5f)), getRandomColor(), 0.75f)
-                    ),
+                    components::Light::spot(position, camForward, 50.0f, 22.5f, getRandomColor(), 0.75f),
                     components::Mesh(sphereInvertedMeshData,
                                      graphics::Texture2DManager::get("textures/SunTexture.png", *graphics::Sampler::getLinearMirroredSampler()),
                                      graphics::Texture2DManager::get("textures/Sun_phong.png", *graphics::Sampler::getLinearMirroredSampler())
@@ -122,9 +120,9 @@ namespace gameState {
                 float minDistance = 0.0f;
                 const int lightCount = static_cast<int>(activeLights.size());
                 for (int i = 0; i < lightCount; ++i) {
-                    graphics::LightData lightData = entity::EntityRegistry::getInstance()
-                            .getComponentData<components::Light>(activeLights[i]).value().getLightData();
-                    float distance = glm::length(camPosition - lightData.light_position);
+                    components::Light lightComp = entity::EntityRegistry::getInstance()
+                            .getComponentData<components::Light>(activeLights[i]).value();
+                    float distance = glm::length(camPosition - lightComp.getPosition());
                     if (distance < minDistance || nearestLightEntity < 0) {
                         nearestLightEntity = i;
                         minDistance = distance;
@@ -147,6 +145,7 @@ namespace gameState {
 
         initializeHotkeys();
         cameraControls.update(deltaMicroseconds);
+        meshRenderer.update();
     }
 
     void LightDemo::draw(const long long &deltaMicroseconds) {
@@ -154,7 +153,6 @@ namespace gameState {
 
         graphics::LightManager::LightSystem(registry).execute();
 
-        meshRenderer.update();
         meshRenderer.present(program.getID());
     }
 

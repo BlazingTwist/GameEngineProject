@@ -73,11 +73,11 @@ namespace gameState {
         meshRenderer.registerMesh(xyPlaneEntity);
 
         lightSource = entity::EntityRegistry::getInstance().createEntity(
-                components::Light(graphics::LightData::directional(
+                components::Light::directional(
                         glm::normalize(glm::vec3(-1.0f, -1.0f, 1.0f)),
                         glm::vec3(1.0f, 1.0f, 0.8f),
                         2.5f
-                ))
+                )
         );
     }
 
@@ -159,13 +159,13 @@ namespace gameState {
 
         initializeHotkeys();
         cameraControls.update(deltaMicroseconds);
+        meshRenderer.update();
     }
 
     void ParallaxOcclusionDemo::draw(const long long &deltaMicroseconds) {
         auto &registry = entity::EntityRegistry::getInstance();
         graphics::LightManager::LightSystem(registry).execute();
-
-        meshRenderer.update();
+        
         meshRenderer.present(program.getID());
     }
 
@@ -189,7 +189,7 @@ namespace gameState {
         meshRenderer.clear();
         delete xyPlaneEntity;
 
-        graphics::LightManager::getInstance().removeLight(entity::EntityRegistry::getInstance().getComponentData<components::Light>(lightSource).value());
+        graphics::LightManager::getInstance().removeLight(lightSource);
         entity::EntityRegistry::getInstance().eraseEntity(lightSource);
         delete lightSource;
 
