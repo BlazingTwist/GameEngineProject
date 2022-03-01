@@ -62,16 +62,6 @@ namespace gameState {
 
 
         entity::EntityRegistry& registry = entity::EntityRegistry::getInstance();
-
-       
-
-      //  auto planetTransform = registry.getComponentData<components::Transform>(planetEntity).value();
-      //  planetTransform.setPosition(defaultPlanetPosition);
-       // registry.addOrSetComponent(planetEntity, planetTransform);
-
-      //  auto planetPhysicsObject = registry.getComponentData<components::PhysicsObject>(planetEntity).value();
-       // planetPhysicsObject._velocity = defaultPlanetVelocity;
-       // registry.addOrSetComponent(planetEntity, planetPhysicsObject);
     }
 
     void FreeFallDemoState::bindLighting() {
@@ -165,7 +155,7 @@ namespace gameState {
          
                              double acc =(9.81)/( deltaSecondsSquared);
                              velocityGain= acc * deltaSeconds;
-                             std::cout <<(phys._velocity.y);
+                            
                           
                              phys._velocity = phys._velocity - glm::vec3(0, 1, 0) *(float)velocityGain/100000.f;
                            
@@ -178,16 +168,17 @@ namespace gameState {
                             }
                                
                             else {
-                                std::cout << "hlleo";
-                                for (int i=0; i<planetVec.size();i++)
+                                
+                                const int id = entity->getReferenceID();
+                                for (unsigned int i=0; i<planetVec.size();i++)
                                 {
-
-                                    if (planetVec[i] == entity) {
-                                        entity::EntityReference* storedPlanet = planetVec[i];
-                                        meshRenderer.removeMesh(storedPlanet);
-                                        entity::EntityRegistry::getInstance().eraseEntity(planetVec[i]);
-                                        planetVec.erase(planetVec.begin() + i);
-                                        return;
+                                    
+                                    
+                                    entity::EntityReference* storedPlanet = planetVec[i];
+                                    if (id == storedPlanet->getReferenceID()) {
+                                        
+                                        deleteThese.push_back(storedPlanet);
+                                      
                                     }
 
                                 }
@@ -196,6 +187,20 @@ namespace gameState {
                                 
                     });
        
+
+        for (int i = 0; i < deleteThese.size(); i++)
+        {
+
+            for (int k = 0; k < planetVec.size(); k++)
+
+                if (planetVec[k] == deleteThese[i]) {
+                    meshRenderer.removeMesh(planetVec[k]);
+                    entity::EntityRegistry::getInstance().eraseEntity(planetVec[k]);
+                    delete planetVec[k];
+                    planetVec.erase(planetVec.begin() + k);
+                   
+                }
+        }
         createObjects(deltaMicroseconds);
         meshRenderer.update();
     }

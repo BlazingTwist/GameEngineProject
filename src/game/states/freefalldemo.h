@@ -48,7 +48,7 @@ namespace gameState {
         glm::vec3 ambientLightData;
 
        
-        
+        std::vector<entity::EntityReference*>deleteThese;
         std::vector< entity::EntityReference*>planetVec;
         entity::EntityReference* lightSource = nullptr;
         graphics::Sampler* sampler = nullptr;

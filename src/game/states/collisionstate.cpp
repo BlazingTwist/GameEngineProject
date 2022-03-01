@@ -43,7 +43,10 @@ namespace gameState {
         spdlog::info("Spring Demo Controls:");
         spdlog::info("- WASD + EQ = Camera Movement");
         spdlog::info("- Mouse = Camera Yaw/Pitch");
-        spdlog::info("- press [1] to exit this state");
+        spdlog::info("- on left mousebutton click = shoot");
+        spdlog::info("- press [1] to reset scene");
+        spdlog::info("- press [2] to start a new MainGameState");
+        spdlog::info("- press [3] to exit this state");
     }
 
     void CollisionState::initializeHotkeys() {
@@ -132,10 +135,11 @@ namespace gameState {
             std::mt19937 gen(randomDevice());
             std::uniform_int_distribution<> positionDistribution(0, 9);
             std::uniform_int_distribution<> directionDistribution(0, 8);
+            std::uniform_int_distribution<> angularVelocityDistribution(0, 20);
 
             glm::vec3 position = glm::vec3(positionDistribution(gen), positionDistribution(gen), positionDistribution(gen));
             glm::vec3 direction = glm::vec3(directionDistribution(gen) - 4, directionDistribution(gen) - 4, directionDistribution(gen) - 4);
-
+            glm::vec3 angularVelocity = glm::vec3(angularVelocityDistribution(gen), angularVelocityDistribution(gen), angularVelocityDistribution(gen));
             entity::EntityReference *planetEntity = entity::EntityRegistry::getInstance().createEntity(
                     components::Transform(position,
                                           glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
@@ -145,7 +149,7 @@ namespace gameState {
                                      graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
                                      graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())
                     ),
-                    components::PhysicsObject(direction, {position, position})
+                    components::PhysicsObject(direction, {position, position},angularVelocity)
             );
             meshRenderer.registerMesh(planetEntity);
             planetVec.push_back(planetEntity);
@@ -183,7 +187,7 @@ namespace gameState {
                 components::PhysicsObject physicsObject = registry.getComponentData<components::PhysicsObject>(planetEntity).value();
                 components::Transform planetTransform = registry.getComponentData<components::Transform>(planetEntity).value();
 
-                planetTransform.setRotation(planetTransform.getPosition() + glm::vec3(12, 22, 7));
+                planetTransform.setRotation(planetTransform.getPosition() + physicsObject._angularVelocity);
 
                 collisionTree.insert(physicsObject._aabb, planetEntity);
                 registry.addOrSetComponent(planetEntity, planetTransform);
