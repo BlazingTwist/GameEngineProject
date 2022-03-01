@@ -4,6 +4,10 @@
 #include "engine/graphics/renderer/mesh.hpp"
 #include "engine/graphics/core/texture.hpp"
 
+namespace graphics{
+    class MeshRenderer;
+}
+
 namespace components {
 
     /**
@@ -20,15 +24,13 @@ namespace components {
         static constexpr int heightStateIndex = 4;
 
     public:
-        Mesh() : _rendererID(0) {};
+        Mesh() = default;
 
-        Mesh(const unsigned int rendererId,
-             const utils::MeshData *meshData,
-             const graphics::Texture2D *textureData = nullptr,
-             const graphics::Texture2D *phongData = nullptr,
-             const graphics::Texture2D *normalData = nullptr,
-             const graphics::Texture2D *heightData = nullptr) :
-                _rendererID(rendererId),
+        explicit Mesh(const utils::MeshData *meshData,
+                      const graphics::Texture2D *textureData = nullptr,
+                      const graphics::Texture2D *phongData = nullptr,
+                      const graphics::Texture2D *normalData = nullptr,
+                      const graphics::Texture2D *heightData = nullptr) :
                 _meshData(meshData),
                 _textureData(textureData),
                 _phongData(phongData),
@@ -48,10 +50,6 @@ namespace components {
             if (heightData != nullptr) {
                 _stateChanges |= 0b1 << heightStateIndex;
             }
-        }
-
-        [[nodiscard]] unsigned int getRendererId() const {
-            return _rendererID;
         }
 
         [[nodiscard]] utils::MeshData::Handle getMeshData() const {
@@ -99,6 +97,15 @@ namespace components {
             _stateChanges |= 0b1 << heightStateIndex;
         }
 
+        [[nodiscard]] bool getIsEnabled() const {
+            return _isEnabled;
+        }
+
+        // This should only be used to disable meshes temporarily, not to permanently delete it.
+        void setEnabled(bool isEnabled) {
+            Mesh::_isEnabled = isEnabled;
+        }
+
         [[nodiscard]] bool meshHasChanged() const {
             return (_stateChanges & (0b1 << meshStateIndex)) != 0;
         }
@@ -143,14 +150,18 @@ namespace components {
             return _stateChanges != 0;
         }
 
-    private:
-        unsigned int _rendererID;
+    protected:
+        int _rendererID = -1;
 
+        friend class graphics::MeshRenderer;
+
+    private:
         utils::MeshData::Handle _meshData = nullptr;
         graphics::Texture2D::Handle _textureData = nullptr;
         graphics::Texture2D::Handle _phongData = nullptr;
         graphics::Texture2D::Handle _normalData = nullptr;
         graphics::Texture2D::Handle _heightData = nullptr;
+        bool _isEnabled = true;
 
         int _stateChanges = 0;
     };
