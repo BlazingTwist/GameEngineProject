@@ -23,7 +23,6 @@
 #include <iostream>
 #include <engine/components/mesh.h>
 #include <engine/components/transform.h>
-#include <engine/components/bullet.h>
 #include <engine/entity/entityregistry.h>
 
 namespace gameState {
