@@ -79,11 +79,13 @@ namespace gameState {
             entity::EntityReference *planetEntity = entity::EntityRegistry::getInstance().createEntity(
                     components::Transform(position,
                                           glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
-                                          scale),
+                                          scale
+                    ),
                     components::Mesh(utils::MeshLoader::get("models/sphere.obj"),
                                      graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
-                                     graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())),
-                    components::PhysicsObject(150'000.0, defaultPlanetVelocity)
+                                     graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())
+                    ),
+                    components::Velocity(defaultPlanetVelocity)
             );
 
             meshRenderer.registerMesh(planetEntity);
@@ -103,19 +105,13 @@ namespace gameState {
         double deltaSecondsSquared = deltaSeconds * deltaSeconds;
 
         entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
-
+        
         std::vector<const entity::EntityReference *> outOfBoundsEntities = {};
         registry.execute([deltaSeconds, deltaSecondsSquared, &outOfBoundsEntities]
-                                 (const entity::EntityReference *entity, components::Transform transform, components::PhysicsObject phys) {
+                                 (const entity::EntityReference *entity, components::Transform transform, components::Velocity velocity) {
             static constexpr float gravityAcceleration = 1.0f;
-            double velocityGain = gravityAcceleration * deltaSeconds;
-            double accelerationDistance = gravityAcceleration * deltaSecondsSquared;
-
-            glm::vec3 positionDelta =
-                    (glm::vec3(0, -1, 0) * static_cast<float>(accelerationDistance)) + (phys._velocity * static_cast<float>(deltaSeconds));
-
-            phys._velocity += (glm::vec3(0, -1, 0) * static_cast<float>(velocityGain));
-            transform.setPosition(transform.getPosition() + positionDelta);
+            velocity.applyVelocity(transform, deltaSeconds, deltaSecondsSquared);
+            velocity.applyAcceleration(glm::vec3(0.0f, -gravityAcceleration, 0.0f), transform, deltaSeconds, deltaSecondsSquared);
 
             // remove entities when fallen below y=-20;
             if (transform.getPosition().y <= -20) {
@@ -123,7 +119,7 @@ namespace gameState {
             }
 
             entity::EntityRegistry::getInstance().addOrSetComponent(entity, transform);
-            entity::EntityRegistry::getInstance().addOrSetComponent(entity, phys);
+            entity::EntityRegistry::getInstance().addOrSetComponent(entity, velocity);
         });
 
         for (const entity::EntityReference *outOfBoundsEntity: outOfBoundsEntities) {
