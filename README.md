@@ -7,6 +7,7 @@
 * **Parallax Occlusion** - Darstellung des Parallax Occlusion Mappings an einer Holzwand.
 * **Light Demo** - Präsentation des SSBO-Buffer basierten Lichtsystems (freie Platzierung beliebig vieler Lichtquellen im Raum).
 * **Collision State** - Objekte bewegen sich im Raum und können beschossen werden.
+* **SpaceSim** - Raumschiff steuern im Weltraum mit mehreren Planeten, die sich entsprechend Newtons universaler Gravitation bewegen.
 
 # Tasks
 
