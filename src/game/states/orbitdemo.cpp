@@ -57,7 +57,8 @@ namespace gameState {
                 components::Mesh(utils::MeshLoader::get("models/sphere.obj"),
                                  graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
                                  graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())),
-                components::PhysicsObject(150'000.0, defaultPlanetVelocity)
+                components::Velocity(defaultPlanetVelocity),
+                components::OrbitalObject(150'000.0)
         );
         meshRenderer.registerMesh(planetEntity);
 
@@ -80,7 +81,8 @@ namespace gameState {
                                  graphics::Texture2DManager::get("textures/SunTexture.png", *graphics::Sampler::getLinearMirroredSampler()),
                                  graphics::Texture2DManager::get("textures/Sun_phong.png", *graphics::Sampler::getLinearMirroredSampler())
                 ),
-                components::PhysicsObject(600'000.0, defaultSunVelocity)
+                components::Velocity(defaultSunVelocity),
+                components::OrbitalObject(600'000.0)
         );
         meshRenderer.registerMesh(sunEntity);
 
@@ -114,17 +116,17 @@ namespace gameState {
         planetTransform.setPosition(defaultPlanetPosition);
         registry.addOrSetComponent(planetEntity, planetTransform);
 
-        auto planetPhysicsObject = registry.getComponentData<components::PhysicsObject>(planetEntity).value();
-        planetPhysicsObject._velocity = defaultPlanetVelocity;
-        registry.addOrSetComponent(planetEntity, planetPhysicsObject);
+        auto planetVelocity = registry.getComponentData<components::Velocity>(planetEntity).value();
+        planetVelocity.velocity = defaultPlanetVelocity;
+        registry.addOrSetComponent(planetEntity, planetVelocity);
 
         auto sunTransform = registry.getComponentData<components::Transform>(sunEntity).value();
         sunTransform.setPosition(defaultSunPosition);
         registry.addOrSetComponent(sunEntity, sunTransform);
 
-        auto sunPhysicsObject = registry.getComponentData<components::PhysicsObject>(sunEntity).value();
-        sunPhysicsObject._velocity = defaultSunVelocity;
-        registry.addOrSetComponent(sunEntity, sunPhysicsObject);
+        auto sunVelocity = registry.getComponentData<components::Velocity>(sunEntity).value();
+        sunVelocity.velocity = defaultSunVelocity;
+        registry.addOrSetComponent(sunEntity, sunVelocity);
     }
 
     void OrbitDemoState::bindLighting() {
@@ -194,7 +196,8 @@ namespace gameState {
 
         double deltaSeconds = (double) deltaMicroseconds / 1'000'000.0;
         double deltaSecondsSquared = deltaSeconds * deltaSeconds;
-        registry.execute(components::PhysicsObject::CrossObjectGravitySystem(registry, deltaSeconds, deltaSecondsSquared));
+        components::ApplyVelocitySystem(registry, deltaSeconds, deltaSecondsSquared).execute();
+        components::OrbitalSystem(registry, deltaSeconds, deltaSecondsSquared).execute();
 
         components::Transform sunPosition = registry.getComponentData<components::Transform>(sunEntity).value();
         lightComponent.setPosition(sunPosition.getPosition());

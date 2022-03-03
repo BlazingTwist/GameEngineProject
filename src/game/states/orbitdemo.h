@@ -13,7 +13,8 @@
 #include <game/camera/defaultcameracontrols.h>
 #include <engine/components/mesh.h>
 #include <engine/components/transform.h>
-#include <engine/components/physicsobject.h>
+#include <engine/components/velocity.h>
+#include <engine/components/OrbitalObject.h>
 #include "mainstate.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
