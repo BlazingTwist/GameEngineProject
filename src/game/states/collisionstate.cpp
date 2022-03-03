@@ -88,9 +88,8 @@ namespace gameState {
                 components::Mesh(utils::MeshLoader::get("models/sphere.obj"),
                                  graphics::Texture2DManager::get("textures/SunTexture.png", *graphics::Sampler::getLinearMirroredSampler())
                 ),
-                components::PhysicsObject(bulletDirection * defaultBulletVelocity,
-                                          {spawnPosition - defaultBulletScale, spawnPosition + defaultBulletScale}
-                )
+                components::AABBCollider(),
+                components::Velocity(bulletDirection * defaultBulletVelocity)
         );
         meshRenderer.registerMesh(bullet);
         bulletVec.push_back(bullet);
@@ -133,11 +132,15 @@ namespace gameState {
             std::mt19937 gen(randomDevice());
             std::uniform_int_distribution<> positionDistribution(0, 9);
             std::uniform_int_distribution<> directionDistribution(0, 8);
-            std::uniform_int_distribution<> angularVelocityDistribution(0, 20);
+            std::uniform_real_distribution<> angularVelocityDistribution(-1, 1);
 
             glm::vec3 position = glm::vec3(positionDistribution(gen), positionDistribution(gen), positionDistribution(gen));
             glm::vec3 direction = glm::vec3(directionDistribution(gen) - 4, directionDistribution(gen) - 4, directionDistribution(gen) - 4);
-            glm::vec3 angularVelocity = glm::vec3(angularVelocityDistribution(gen), angularVelocityDistribution(gen), angularVelocityDistribution(gen));
+            glm::vec3 angularVelocity = glm::vec3(
+                    static_cast<float>(angularVelocityDistribution(gen)),
+                    static_cast<float>(angularVelocityDistribution(gen)),
+                    static_cast<float>(angularVelocityDistribution(gen))
+            );
             entity::EntityReference *planetEntity = entity::EntityRegistry::getInstance().createEntity(
                     components::Transform(position,
                                           glm::quat(glm::vec3(0.0f, 0.0f, 0.0f)),
@@ -147,7 +150,9 @@ namespace gameState {
                                      graphics::Texture2DManager::get("textures/planet1.png", *graphics::Sampler::getLinearMirroredSampler()),
                                      graphics::Texture2DManager::get("textures/Planet1_phong.png", *graphics::Sampler::getLinearMirroredSampler())
                     ),
-                    components::PhysicsObject(direction, {position, position}, angularVelocity)
+                    components::Velocity(direction),
+                    components::RotationalVelocity(angularVelocity),
+                    components::AABBCollider()
             );
             meshRenderer.registerMesh(planetEntity);
             planetVec.push_back(planetEntity);
@@ -155,7 +160,8 @@ namespace gameState {
     }
 
     void CollisionState::update(const long long &deltaMicroseconds) {
-        double deltaSeconds = (double) deltaMicroseconds / 1'000'000.0;
+        const double deltaSeconds = (double) deltaMicroseconds / 1'000'000.0;
+        const double deltaSecondsSquared = deltaSeconds * deltaSeconds;
 
         if (!hotkey_exit_isDown && input::InputManager::isKeyPressed(input::Key::Num1)) {
             onExit();
@@ -164,36 +170,29 @@ namespace gameState {
 
         entity::EntityRegistry &registry = entity::EntityRegistry::getInstance();
 
-        if (!planetVec.empty()) {
-            registry.execute([deltaSeconds, &registry](const entity::EntityReference *entity, components::Transform transform, components::PhysicsObject phys) {
-                transform.setPosition(transform.getPosition() + (phys._velocity) * (float) deltaSeconds);
-                glm::vec3 pos = transform.getPosition();
-                phys._aabb.min = transform.getPosition() - transform.getScale();
-                phys._aabb.max = transform.getPosition() + transform.getScale();
-                if (pos.x < -boxSize || pos.x > boxSize)
-                    phys._velocity.x = -phys._velocity.x;
-                if (pos.y < -boxSize || pos.y > boxSize)
-                    phys._velocity.y = -phys._velocity.y;
-                if (pos.z < -boxSize || pos.z > boxSize)
-                    phys._velocity.z = -phys._velocity.z;
+        components::ApplyVelocitySystem(registry, deltaSeconds, deltaSecondsSquared).execute();
+        components::ApplyRotationalVelocitySystem(registry, deltaSeconds, deltaSecondsSquared).execute();
 
-                registry.addOrSetComponent(entity, transform);
-                registry.addOrSetComponent(entity, phys);
+        if (!planetVec.empty()) {
+            registry.execute([deltaSeconds, &registry]
+                                     (const entity::EntityReference *entity, components::Transform transform, components::Velocity velocity) {
+                glm::vec3 pos = transform.getPosition();
+                if (pos.x < -boxSize || pos.x > boxSize) velocity.velocity.x = -velocity.velocity.x;
+                if (pos.y < -boxSize || pos.y > boxSize) velocity.velocity.y = -velocity.velocity.y;
+                if (pos.z < -boxSize || pos.z > boxSize) velocity.velocity.z = -velocity.velocity.z;
+                registry.addOrSetComponent(entity, velocity);
             });
 
             for (const entity::EntityReference *planetEntity: planetVec) {
-                components::PhysicsObject physicsObject = registry.getComponentData<components::PhysicsObject>(planetEntity).value();
+                components::AABBCollider planetCollider = registry.getComponentData<components::AABBCollider>(planetEntity).value();
                 components::Transform planetTransform = registry.getComponentData<components::Transform>(planetEntity).value();
-
-                planetTransform.setRotation(planetTransform.getPosition() + physicsObject._angularVelocity);
-
-                collisionTree.insert(physicsObject._aabb, planetEntity);
-                registry.addOrSetComponent(planetEntity, planetTransform);
+                collisionTree.insert(planetCollider.getAABB(planetTransform), planetEntity);
             }
 
             for (const entity::EntityReference *bulletEntity: bulletVec) {
-                components::PhysicsObject physicsObject = registry.getComponentData<components::PhysicsObject>(bulletEntity).value();
-                CollisionState_TreeProcessor treeProc({physicsObject._aabb.min, physicsObject._aabb.max}, planetVec, meshRenderer);
+                components::AABBCollider bulletCollider = registry.getComponentData<components::AABBCollider>(bulletEntity).value();
+                components::Transform bulletTransform = registry.getComponentData<components::Transform>(bulletEntity).value();
+                CollisionState_TreeProcessor treeProc(bulletCollider.getAABB(bulletTransform), planetVec, meshRenderer);
                 collisionTree.traverse(treeProc);
             }
 
@@ -206,8 +205,7 @@ namespace gameState {
 
         if (bulletCoolDownSeconds > 0.0) {
             bulletCoolDownSeconds -= deltaSeconds;
-        }
-        if (bulletCoolDownSeconds <= 0.0 && input::InputManager::isButtonPressed(input::MouseButton::LEFT)) {
+        } else if (input::InputManager::isButtonPressed(input::MouseButton::LEFT)) {
             bulletCoolDownSeconds = 1.0;
             createBullet();
         }
