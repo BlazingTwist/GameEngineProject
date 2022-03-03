@@ -12,6 +12,7 @@
 #include <game/states/ParallaxOcclusionDemo.h>
 #include <game/states/LightDemo.h>
 #include <game/states/collisionstate.h>
+#include <game/states/SpaceSim.h>
 
 #include <engine/entity/entityreference.h>
 #include <engine/entity/entityregistry.h>
@@ -38,6 +39,7 @@ namespace gameState {
         bool hotkey_parallaxOcclusionDemo_isDown = false;
         bool hotkey_lightDemo_isDown = false;
         bool hotkey_collisionState_isDown = false;
+        bool hotkey_spaceSim_isDown = false;
         bool hotkey_mainState_isDown = false;
         bool hotkey_exit_isDown = false;
 

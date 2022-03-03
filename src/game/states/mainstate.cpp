@@ -10,8 +10,9 @@ namespace gameState {
         spdlog::info("- Press [4] to enter parallax occlusion demo");
         spdlog::info("- Press [5] to enter light demo");
         spdlog::info("- Press [6] to enter collision state");
-        spdlog::info("- Press [7] to enter a new main state");
-        spdlog::info("- Press [8] to exit this state");
+        spdlog::info("- Press [7] to enter SpaceSim state");
+        spdlog::info("- Press [8] to enter a new main state");
+        spdlog::info("- Press [9] to exit this state");
     }
 
     void MainGameState::initializeControls() {
@@ -21,8 +22,9 @@ namespace gameState {
         hotkey_parallaxOcclusionDemo_isDown = input::InputManager::isKeyPressed(input::Key::Num4);
         hotkey_lightDemo_isDown = input::InputManager::isKeyPressed(input::Key::Num5);
         hotkey_collisionState_isDown = input::InputManager::isKeyPressed(input::Key::Num6);
-        hotkey_mainState_isDown = input::InputManager::isKeyPressed(input::Key::Num7);
-        hotkey_exit_isDown = input::InputManager::isKeyPressed(input::Key::Num8);
+        hotkey_spaceSim_isDown = input::InputManager::isKeyPressed(input::Key::Num7);
+        hotkey_mainState_isDown = input::InputManager::isKeyPressed(input::Key::Num8);
+        hotkey_exit_isDown = input::InputManager::isKeyPressed(input::Key::Num9);
     }
 
     MainGameState::MainGameState() {
@@ -67,13 +69,19 @@ namespace gameState {
             return;
         }
 
-        if (!hotkey_mainState_isDown && input::InputManager::isKeyPressed(input::Key::Num7)) {
+        if (!hotkey_spaceSim_isDown && input::InputManager::isKeyPressed(input::Key::Num7)) {
+            spdlog::info("main state -> SpaceSim");
+            gameState::GameStateManager::getInstance().startGameState(new SpaceSim());
+            return;
+        }
+        
+        if (!hotkey_mainState_isDown && input::InputManager::isKeyPressed(input::Key::Num8)) {
             spdlog::info("main state -> main state");
             gameState::GameStateManager::getInstance().startGameState(new MainGameState());
             return;
         }
 
-        if (!hotkey_exit_isDown && input::InputManager::isKeyPressed(input::Key::Num8)) {
+        if (!hotkey_exit_isDown && input::InputManager::isKeyPressed(input::Key::Num9)) {
             spdlog::info("main state FINISHED");
             _isFinished = true;
             return;
